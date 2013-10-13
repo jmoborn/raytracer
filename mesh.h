@@ -23,6 +23,7 @@ private:
 
 class mesh {
 public:
+	mesh();
 	mesh(std::string filepath);
 	~mesh(){};
 

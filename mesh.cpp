@@ -15,6 +15,8 @@ face::face(std::vector<int> pts, std::vector<int> txs)
 	// }
 }
 
+mesh::mesh(){}
+
 mesh::mesh(std::string filepath)
 {
 	readobj(filepath);
