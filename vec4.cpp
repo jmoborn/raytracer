@@ -175,6 +175,10 @@ vec4 operator*(const mat4& m, const vec4& v)
 	// std::cout << m(2,0) << "*" <<v.x << " + "<<m(2,1) << "*" <<v.y << " + "<<m(2,2) << "*" <<v.z << std::endl;
 	return vec4(mvx, mvy, mvz, mvw);
 }
+vec4 operator*(const vec4& v, const double c)
+{
+	return vec4(v.x*c, v.y*c, v.z*c);
+}
 
 vec2::vec2()
 {

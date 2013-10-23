@@ -2,9 +2,7 @@ CXX=g++
 
 LIBS=
 
-CCFLAGS=
-
-raytracer: mat4.o vec4.o mesh.o raytracer.h
+raytracer: raytracer.cpp mat4.o vec4.o mesh.o raytracer.h
 	${CXX} -o raytracer raytracer.cpp mat4.o vec4.o mesh.o raytracer.h ${LIBS}
 
 mat4.o: mat4.cpp mat4.h
