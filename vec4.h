@@ -65,4 +65,14 @@ public:
 	double v;
 };
 
+class ray {
+public:
+	ray(vec4 origin, vec4 direction);
+	~ray(){};
+
+	vec4 o;
+	vec4 d;
+	double t;
+};
+
 #endif

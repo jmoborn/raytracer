@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include "vec4.h"
+// #include "object.h"
 
 class face {
 public:
@@ -26,6 +27,7 @@ public:
 	mesh();
 	mesh(std::string filepath);
 	~mesh(){};
+	vec4 intersect();
 
 	std::vector<vec4> verts;
 	std::vector<face> faces;

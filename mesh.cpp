@@ -22,6 +22,11 @@ mesh::mesh(std::string filepath)
 	readobj(filepath);
 }
 
+vec4 mesh::intersect()
+{
+	return vec4(1, 1, 1);
+}
+
 void mesh::readobj(std::string& filepath)
 {
 	FILE *objfile = fopen(filepath.c_str(), "r");

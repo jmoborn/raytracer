@@ -192,6 +192,13 @@ vec2::vec2(double u, double v)
 	this->v = v;
 }
 
+ray::ray(vec4 origin, vec4 direction)
+{
+	this->o = origin;
+	this->d = direction;
+	this->t = 0;
+}
+
 // int main()
 // {
 // 	mat4 m;
