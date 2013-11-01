@@ -14,6 +14,7 @@ public:
 	vec4 shade();
 	double r;
 	vec4 c;
+	vec4 color;
 };
 
 #endif
