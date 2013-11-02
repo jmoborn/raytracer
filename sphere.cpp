@@ -41,6 +41,11 @@ bool sphere::intersect(ray& v)
 	return false;
 }
 
+vec4 sphere::normal(const vec4& p)
+{
+	return (p - this->c)*(1/this->r);
+}
+
 vec4 sphere::shade()
 {
 	return vec4(0,0,0);

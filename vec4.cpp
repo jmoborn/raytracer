@@ -60,6 +60,17 @@ void vec4::normalize()
 	z /= l;
 }
 
+void vec4::clamp(double limit)
+{
+	double l = length();
+	if(l>limit)
+	{
+		x /= l;
+		y /= l;
+		z /= l;
+	}
+}
+
 double vec4::operator==(const vec4& v)
 {
 	return (x==v.x && y==v.y && z==v.z);
@@ -197,6 +208,11 @@ ray::ray(vec4 origin, vec4 direction)
 	this->o = origin;
 	this->d = direction;
 	this->t = 0;
+}
+
+vec4 ray::end()
+{
+	return this->o + (this->d*this->t);
 }
 
 // int main()

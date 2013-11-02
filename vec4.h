@@ -25,6 +25,7 @@ public:
 	double dot(vec4& v);
 	vec4 cross(vec4& v);
 	void normalize();
+	void clamp(double limit);
 
 	double x;
 	double y;
@@ -69,6 +70,8 @@ class ray {
 public:
 	ray(vec4 origin, vec4 direction);
 	~ray(){};
+
+	vec4 end();
 
 	vec4 o;
 	vec4 d;

@@ -12,6 +12,7 @@ public:
 	~sphere(){};
 	bool intersect(ray& r);
 	vec4 shade();
+	vec4 normal(const vec4& p);
 	double r;
 	vec4 c;
 	vec4 color;

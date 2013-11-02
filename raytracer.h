@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <math.h>
+#include <algorithm>
 
 #include "mat4.h"
 #include "vec4.h"
