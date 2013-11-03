@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 #include "vec4.h"
-// #include "object.h"
+#include "object.h"
 
 class face {
 public:
@@ -22,12 +22,14 @@ private:
 	bool isQuad;
 };
 
-class mesh {
+class mesh : public object {
 public:
 	mesh();
 	mesh(std::string filepath);
 	~mesh(){};
-	vec4 intersect();
+	bool intersect(ray& r);
+	vec4 get_normal(const vec4& p);
+	vec4 get_color();
 
 	std::vector<vec4> verts;
 	std::vector<face> faces;

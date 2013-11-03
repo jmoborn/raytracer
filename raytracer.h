@@ -14,6 +14,11 @@ class raytracer {
 public:
 	raytracer();
 	~raytracer();
+
+	std::vector<object*> objs;
+
+	//constants
+	static const double PI = 3.141592653589;
 private:
 	vec4 v;
 	mat4 m;

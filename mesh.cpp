@@ -22,9 +22,19 @@ mesh::mesh(std::string filepath)
 	readobj(filepath);
 }
 
-vec4 mesh::intersect()
+bool mesh::intersect(ray& r)
 {
-	return vec4(1, 1, 1);
+	return false;
+}
+
+vec4 mesh::get_normal(const vec4& p)
+{
+	return vec4(0, 1, 0);
+}
+
+vec4 mesh::get_color()
+{
+	return vec4(1, 0, 0);
 }
 
 void mesh::readobj(std::string& filepath)

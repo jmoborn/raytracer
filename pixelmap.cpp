@@ -17,6 +17,7 @@ pixelmap::pixelmap(int w, int h)
 
 pixelmap::~pixelmap()
 {
+	//TODO free this memory completely
 	delete this->pixels;
 }
 
@@ -35,13 +36,13 @@ void pixelmap::writeppm(std::string filename)
 	std::ofstream file;
   	file.open (filename.c_str());
   	file << "P3\n" << width << " " << height << "\n" << 255 << "\n";
-  	for(int i=0; i<width; i++)
+  	for(int i=height; i>=0; i--)
   	{
-  		for(int j=0; j<height; j++)
+  		for(int j=0; j<width; j++)
   		{
-  			file << round(pixels[i][j].x*255) << " " 
-  				 << round(pixels[i][j].y*255) << " " 
-  				 << round(pixels[i][j].z*255) << "  ";
+  			file << round(pixels[j][i].x*255) << " " 
+  				 << round(pixels[j][i].y*255) << " " 
+  				 << round(pixels[j][i].z*255) << "  ";
   		}
   		file << "\n";
   	}
