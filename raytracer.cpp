@@ -76,7 +76,12 @@ int main()
 							// std::cout << pt.x << " " << pt.y << " " << pt.z << std::endl;
 							light.normalize();
 							normal.normalize();
-							color += r.objs[o]->get_color() * std::max(0.0, normal.dot(light));
+							double n_dot_l = normal.dot(light);
+							vec4 reflect = normal*(2*n_dot_l) - light;
+							vec4 eye = v.d*(-1);
+							reflect.normalize();
+							color += r.objs[o]->get_color() * std::max(0.0, n_dot_l);
+							color += vec4(1,1,1) * pow(std::max(0.0, eye.dot(reflect)), 32.0);
 						}
 					}
 				}
