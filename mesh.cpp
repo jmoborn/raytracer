@@ -33,7 +33,12 @@ vec4 mesh::get_normal(const vec4& p)
 	return vec4(0, 1, 0);
 }
 
-vec4 mesh::get_color()
+vec4 mesh::diffuse()
+{
+	return vec4(1, 0, 0);
+}
+
+vec4 mesh::reflect()
 {
 	return vec4(1, 0, 0);
 }

@@ -5,13 +5,17 @@ sphere::sphere(double radius, vec4 center)
 	this->r = radius;
 	this->c = center;
 	this->color = (0.5, 0.5, 0.5);
+	this->diffuse_mult = 1.0;
+	this->reflect_mult - 0.0;
 }
 
-sphere::sphere(double radius, vec4 center, vec4 color)
+sphere::sphere(double radius, vec4 center, vec4 color, double diff)
 {
 	this->r = radius;
 	this->c = center;
 	this->color = color;
+	this->diffuse_mult = diff;
+	this->reflect_mult = 1.0 - diff;
 }
 
 /*
@@ -39,7 +43,7 @@ bool sphere::intersect(ray& v)
 		{
 			v.t = -B/2;
 			v.hit_norm = get_normal(v.end());
-			v.hit_color = get_color();
+			v.hit_color = diffuse();
 		}
 		return true;
 	}
@@ -57,7 +61,7 @@ bool sphere::intersect(ray& v)
 			{
 				v.t = root;
 				v.hit_norm = get_normal(v.end());
-				v.hit_color = get_color();
+				v.hit_color = diffuse();
 			}
 			return true;
 		}
@@ -68,7 +72,7 @@ bool sphere::intersect(ray& v)
 		{
 			v.t = root;
 			v.hit_norm = get_normal(v.end());
-			v.hit_color = get_color();
+			v.hit_color = diffuse();
 		}
 		return true;
 	}
@@ -85,7 +89,12 @@ vec4 sphere::get_normal(const vec4& p)
 	return (p - this->c)*(1/this->r);
 }
 
-vec4 sphere::get_color()
+vec4 sphere::diffuse()
 {
-	return color;
+	return color*diffuse_mult;
+}
+
+vec4 sphere::reflect()
+{
+	return color*reflect_mult;
 }

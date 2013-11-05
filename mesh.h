@@ -29,7 +29,8 @@ public:
 	~mesh(){};
 	bool intersect(ray& r);
 	vec4 get_normal(const vec4& p);
-	vec4 get_color();
+	vec4 diffuse();
+	vec4 reflect();
 
 	std::vector<vec4> verts;
 	std::vector<face> faces;

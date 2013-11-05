@@ -17,12 +17,16 @@ public:
 	~raytracer();
 
 	vec4 shade(ray& v);
+	vec4 trace_ray(ray& v, int depth);
 
 	std::vector<object*> objs;
 	std::vector<sphere*> lights;
 
+	int max_depth;
+
 	//constants
 	static const double PI = 3.141592653589;
+
 private:
 	vec4 v;
 	mat4 m;

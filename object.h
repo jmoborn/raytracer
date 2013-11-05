@@ -18,7 +18,8 @@ public:
 		 if the new intersection point is less than t and greater than 0.
 	*/
 	virtual bool intersect(ray& r)=0;
-	virtual vec4 get_color()=0;
+	virtual vec4 diffuse()=0;
+	virtual vec4 reflect()=0;
 };
 
 #endif
