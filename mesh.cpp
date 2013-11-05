@@ -24,6 +24,7 @@ mesh::mesh(std::string filepath)
 
 bool mesh::intersect(ray& r)
 {
+	
 	return false;
 }
 

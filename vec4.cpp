@@ -62,13 +62,9 @@ void vec4::normalize()
 
 void vec4::clamp(double limit)
 {
-	double l = length();
-	if(l>limit)
-	{
-		x /= l;
-		y /= l;
-		z /= l;
-	}
+	if(x>limit)x=limit;
+	if(y>limit)y=limit;
+	if(z>limit)z=limit;
 }
 
 double vec4::operator==(const vec4& v)
@@ -190,6 +186,10 @@ vec4 operator*(const vec4& v, const double c)
 {
 	return vec4(v.x*c, v.y*c, v.z*c);
 }
+vec4 operator*(const vec4& v1, const vec4& v2)
+{
+	return vec4(v1.x*v2.x, v1.y*v2.y, v1.z*v2.z);
+}
 
 vec2::vec2()
 {
@@ -207,7 +207,7 @@ ray::ray(vec4 origin, vec4 direction)
 {
 	this->o = origin;
 	this->d = direction;
-	this->t = 0;
+	this->t = std::numeric_limits<double>::infinity();
 }
 
 vec4 ray::end()

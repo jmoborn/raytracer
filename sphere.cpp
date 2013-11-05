@@ -35,7 +35,12 @@ bool sphere::intersect(ray& v)
 	}
 	if (discriminant==0)
 	{
-		v.t = -B/2;
+		if((-B/2)<v.t)
+		{
+			v.t = -B/2;
+			v.hit_norm = get_normal(v.end());
+			v.hit_color = get_color();
+		}
 		return true;
 	}
 	double root = (-B - sqrt(discriminant))/2;
@@ -48,13 +53,23 @@ bool sphere::intersect(ray& v)
 		}
 		else
 		{
-			v.t = root;
+			if(root < v.t)
+			{
+				v.t = root;
+				v.hit_norm = get_normal(v.end());
+				v.hit_color = get_color();
+			}
 			return true;
 		}
 	}
 	else
 	{
-		v.t = root;
+		if(root < v.t)
+		{
+			v.t = root;
+			v.hit_norm = get_normal(v.end());
+			v.hit_color = get_color();
+		}
 		return true;
 	}
 	

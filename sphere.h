@@ -4,6 +4,8 @@
 #include <iostream>
 #include <string>
 #include <math.h>
+#include <algorithm>
+
 #include "vec4.h"
 #include "object.h"
 

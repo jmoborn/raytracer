@@ -3,6 +3,7 @@
 
 #include <math.h>
 #include <iostream>
+#include <limits>
 
 #include "mat4.h"
 
@@ -54,6 +55,7 @@ public:
 	friend vec4 operator+(const vec4& v, const double c);
 	friend vec4 operator*(const mat4& m, const vec4& v);
 	friend vec4 operator*(const vec4& v, const double c);
+	friend vec4 operator*(const vec4& v1, const vec4& v2);
 };
 
 class vec2 {
@@ -76,6 +78,8 @@ public:
 	vec4 o;
 	vec4 d;
 	double t;
+	vec4 hit_norm;
+	vec4 hit_color;
 };
 
 #endif

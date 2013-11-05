@@ -14,6 +14,7 @@ public:
 
 	void setpixel(int x, int y, vec4 c);
 	vec4 getpixel(int x, int y);
+	
 	//pixels should be set from bottom to top, left to right
 	//however ppms are left to right, top to bottom
 	//this function takes care of flipping them
