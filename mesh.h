@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string>
 #include <vector>
+#include <limits>
 #include "vec4.h"
 #include "object.h"
 
@@ -25,7 +26,7 @@ private:
 class mesh : public object {
 public:
 	mesh();
-	mesh(std::string filepath);
+	mesh(std::string filepath, vec4 c=vec4(.5,.5,.5));
 	~mesh(){};
 	bool intersect(ray& r);
 	vec4 get_normal(const vec4& p);
@@ -35,6 +36,8 @@ public:
 	std::vector<vec4> verts;
 	std::vector<face> faces;
 	std::vector<vec2> texts;
+
+	vec4 color;
 
 private:
 	void readobj(std::string& filepath);

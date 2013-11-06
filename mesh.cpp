@@ -17,15 +17,73 @@ face::face(std::vector<int> pts, std::vector<int> txs)
 
 mesh::mesh(){}
 
-mesh::mesh(std::string filepath)
+mesh::mesh(std::string filepath, vec4 c)
 {
 	readobj(filepath);
+	color = c;
 }
 
 bool mesh::intersect(ray& r)
 {
-	
-	return false;
+	double min_dist = std::numeric_limits<double>::infinity();
+	int closest_face = -1;
+	for(int i=0; i<faces.size(); i++)
+	{
+		// vec4 A = verts[faces[i].pnts[0]];
+		// vec4 B = verts[faces[i].pnts[1]];
+		// vec4 C = verts[faces[i].pnts[2]];
+		vec4 A(-.5, 0, -1.9);
+		// vec4 B(.25, -.4, -2);
+		// vec4 C(-.5, 0, -2);
+		vec4 B(.25, -.4, -2);
+		vec4 C(.5, .25, -2);
+		vec4 AB = B - A;
+		vec4 AC = C - A;
+		vec4 N = AB.cross(AC);
+		double n_dot_r = N.dot(r.d);
+		if(n_dot_r==0) continue;
+		double D = N.dot(A);
+		double hit = -(N.dot(r.o) + D)/n_dot_r;
+		if(hit<0) continue;
+		double tmp = r.t;
+		r.t = hit;
+		vec4 P = r.end();
+		r.t = tmp;
+		// N.normalize();
+
+		vec4 AP = P - A;
+		vec4 ABxAP = AB.cross(AP);
+		double v_num = N.dot(ABxAP);
+		if(v_num<0) continue;
+
+		vec4 BP = P - B;
+		vec4 BC = C - B;
+		vec4 BCxBP = BC.cross(BP);
+		if(N.dot(BCxBP)<0) continue;
+
+		vec4 CP = P - C;
+		vec4 CAxCP = CP.cross(AC);
+		float u_num = N.dot(CAxCP);
+		if(u_num < 0) continue;
+
+		double nom = N.dot(N);
+		double u = u_num/nom;
+		double v = v_num/nom;
+
+		if(hit<min_dist)
+		{
+			// std::cout << "we have a hit!" << std::endl;
+			min_dist = hit;
+			r.t = hit;
+			N.normalize();
+			r.hit_norm = N;
+			r.hit_color = diffuse();
+			closest_face = i;
+		}
+	}
+	// std::cout << min_dist << std::endl;
+	if(closest_face!=-1) return true;
+	else return false;
 }
 
 vec4 mesh::get_normal(const vec4& p)
@@ -35,7 +93,7 @@ vec4 mesh::get_normal(const vec4& p)
 
 vec4 mesh::diffuse()
 {
-	return vec4(1, 0, 0);
+	return color;
 }
 
 vec4 mesh::reflect()

@@ -2,15 +2,12 @@
 
 raytracer::raytracer()
 {
-	v = vec4(1,0,0);
-	m.rotateY(60.0);
-	v *= m;
-	g = mesh();
+	max_depth = 4;
 }
 
 raytracer::~raytracer()
 {
-	max_depth = 1;
+	
 }
 
 vec4 raytracer::shade(ray& v)
@@ -40,8 +37,10 @@ vec4 raytracer::trace_ray(ray& v, int depth)
 	//for each object
 	for(int o=0; o<objs.size(); o++)
 	{
+		// if(o==5) std::cout << v.hit_color.x << std::endl;
 		if(objs[o]->intersect(v))
 		{
+
 			if(v.t<min_dist)
 			{
 				min_dist = v.t;
@@ -51,18 +50,26 @@ vec4 raytracer::trace_ray(ray& v, int depth)
 	}
 	if(closest_obj!=-1)
 	{
+		if(closest_obj==5) std::cout << shade(v).x << std::endl;
 		color += shade(v);
-		// std::cout << depth << std::endl;
+		// std::cout << "depth: " << depth << std::endl;
+		// std::cout << "max depth: " << max_depth << std::endl;
 		// std::cout << objs[closest_obj]->reflect().length() << std::endl;
 		if((objs[closest_obj]->reflect().length())&&(depth<max_depth))
 		{
-			//calculate new ray
+			//calculate reflection ray
 			vec4 org = v.end();
 			vec4 inc = v.d*(-1);
 			vec4 dir = v.hit_norm*(v.hit_norm.dot(inc)*2) - inc;
 			ray r(org, dir);
-			color += /*objs[closest_obj]->reflect()**/trace_ray(r, ++depth);
-			// std::cout << r.hit_color.x << std::endl;
+			color += objs[closest_obj]->reflect()*trace_ray(r, depth+1);
+			//calculate refraction ray
+			// double iof = 1.5;
+			// double c1 = -v.hit_norm.dot(inc);
+			// double c2 = sqrt(1-iof*iof*(1-c1*c1));
+			// vec4 fract = inc*iof + v.hit_norm * (iof*c1 - c2);
+			// ray f(org, fract);
+			// color += trace_ray(f, depth+1)*0.5;
 		}
 	}
 	return color;
@@ -73,8 +80,8 @@ int main()
 	raytracer r;
 	
 	//define camera properties
-	int image_width = 256;
-	int image_height = 256;//384;
+	int image_width = 512;
+	int image_height = 512;//384;
 	vec4 look_from(0,0,1);
 	double fov = 45.0;//degrees
 	fov *= (r.PI/180.0);//radians
@@ -82,7 +89,7 @@ int main()
 	// fov = 1.10714872*2;
 	pixelmap pic(image_width, image_height);
 	double aspect_ratio = (double)image_height/(double)image_width;
-	double samples = 1;
+	double samples = 16;
 	int samples1D = sqrt(samples);
 
 	//calculate image plane size in world space
@@ -92,16 +99,19 @@ int main()
 	double pixel_slice = pixel_width/samples1D;
 
 	//create objects
-	sphere s(0.5, vec4(-.5,-.5,-4), vec4(0,0,1), 0.5);
-	sphere s1(0.33, vec4(.014, -.6, -3.775), vec4(1,0,0), 0.5);
-	sphere tiny(0.2, vec4(.5,.5, -4), vec4(0,1,0), 0.5);
-	sphere tinier(0.11, vec4(.362, .459, -3.418), vec4(1,1,0), 0.5);
-	sphere ref(0.2, vec4(-1.27, -.913, -3.254), vec4(1,0,0), 1.0);
+	sphere s(0.5, vec4(-.5,-.5,-4), vec4(0,0,1), 0.25);
+	// sphere s1(0.33, vec4(.014, -.6, -3.775), vec4(1,0,0), 0.25);
+	sphere s1(0.33, vec4(.014, -.6, -3.775), vec4(1,1,1), 0.25);
+	sphere tiny(0.2, vec4(.5,.5, -4), vec4(0,1,0), 0.25);
+	sphere tinier(0.11, vec4(.362, .459, -3.418), vec4(1,1,0), 0.25);
+	sphere ref(0.2, vec4(-1.27, -.913, -3.254), vec4(1,0,0), 0.25);
+	mesh cube("cube.obj", vec4(1.0, 0, 1.0));
 	r.objs.push_back(&s);
 	r.objs.push_back(&s1);
 	r.objs.push_back(&tiny);
 	r.objs.push_back(&tinier);
 	r.objs.push_back(&ref);
+	// r.objs.push_back(&cube);
 
 	//create lights
 	// vec4 l(0,0,-3.5);
@@ -131,6 +141,7 @@ int main()
 					dir.normalize();
 					ray v(look_from, dir);
 					color += r.trace_ray(v, 0);
+					// if(cube.intersect(v)) color += vec4(1,1,1);
 					// int closest_obj = -1;
 					// double min_dist = std::numeric_limits<double>::infinity();
 					// //for each object
