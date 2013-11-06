@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <limits>
+#include <cmath>
 #include "vec4.h"
 #include "object.h"
 

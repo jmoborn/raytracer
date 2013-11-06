@@ -16,8 +16,9 @@ public:
 	raytracer();
 	~raytracer();
 
-	vec4 shade(ray& v);
-	vec4 trace_ray(ray& v, int depth);
+	vec4 shade(ray& v, int self=-1);
+	vec4 trace_ray(ray& v, int depth, int self);
+	bool trace_shadow(ray& v, int self);
 
 	std::vector<object*> objs;
 	std::vector<sphere*> lights;

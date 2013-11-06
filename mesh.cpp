@@ -29,49 +29,72 @@ bool mesh::intersect(ray& r)
 	int closest_face = -1;
 	for(int i=0; i<faces.size(); i++)
 	{
-		// vec4 A = verts[faces[i].pnts[0]];
-		// vec4 B = verts[faces[i].pnts[1]];
-		// vec4 C = verts[faces[i].pnts[2]];
-		vec4 A(-.5, 0, -1.9);
+		vec4 A = verts[faces[i].pnts[0]];
+		vec4 B = verts[faces[i].pnts[1]];
+		vec4 C = verts[faces[i].pnts[2]];
+		// vec4 A(-.5, 0, -1.9);
 		// vec4 B(.25, -.4, -2);
 		// vec4 C(-.5, 0, -2);
-		vec4 B(.25, -.4, -2);
-		vec4 C(.5, .25, -2);
-		vec4 AB = B - A;
-		vec4 AC = C - A;
-		vec4 N = AB.cross(AC);
-		double n_dot_r = N.dot(r.d);
-		if(n_dot_r==0) continue;
-		double D = N.dot(A);
-		double hit = -(N.dot(r.o) + D)/n_dot_r;
+		// vec4 B(.25, -.4, -2);
+		// vec4 C(.5, .25, -2);
+		// vec4 AB = B - A;
+		// vec4 AC = C - A;
+		// vec4 N = AB.cross(AC);
+		// double n_dot_r = N.dot(r.d);
+		// if(n_dot_r==0) continue;
+		// double D = N.dot(A);
+		// double hit = -(N.dot(r.o) + D)/n_dot_r;
+		// if(hit<0) continue;
+		// double tmp = r.t;
+		// r.t = hit;
+		// vec4 P = r.end();
+		// r.t = tmp;
+		// // N.normalize();
+
+		// vec4 AP = P - A;
+		// vec4 ABxAP = AB.cross(AP);
+		// double v_num = N.dot(ABxAP);
+		// if(v_num<0) continue;
+
+		// vec4 BP = P - B;
+		// vec4 BC = C - B;
+		// vec4 BCxBP = BC.cross(BP);
+		// if(N.dot(BCxBP)<0) continue;
+
+		// vec4 CP = P - C;
+		// vec4 CA = A - C;
+		// vec4 CAxCP = CA.cross(CP);
+		// float u_num = N.dot(CAxCP);
+		// if(u_num < 0) continue;
+
+		// double nom = N.dot(N);
+		// double u = u_num/nom;
+		// double v = v_num/nom;
+
+		vec4 edge1 = B - A;
+		vec4 edge2 = C - A;
+		vec4 pvec = r.d.cross(edge2);
+		double det = edge1.dot(pvec);
+		if(det == 0) continue;
+		double invDet = 1/det;
+		vec4 tvec = r.o - A;
+		double u = tvec.dot(pvec) * invDet;
+		if(u<0 || u>1) continue;
+		vec4 qvec = tvec.cross(edge1);
+		double v = r.d.dot(qvec) * invDet;
+		if(v<0 || (u + v) >1) continue;
+		double hit = (edge2.dot(qvec) * invDet);
 		if(hit<0) continue;
-		double tmp = r.t;
-		r.t = hit;
-		vec4 P = r.end();
-		r.t = tmp;
+		// vec4 N = edge1.cross(edge2);
 		// N.normalize();
+		// double D = N.dot(A);
+		// if(D>=0) continue;
+		// double hit = -(N.dot(r.o) + D)/(N.dot(r.d));
 
-		vec4 AP = P - A;
-		vec4 ABxAP = AB.cross(AP);
-		double v_num = N.dot(ABxAP);
-		if(v_num<0) continue;
-
-		vec4 BP = P - B;
-		vec4 BC = C - B;
-		vec4 BCxBP = BC.cross(BP);
-		if(N.dot(BCxBP)<0) continue;
-
-		vec4 CP = P - C;
-		vec4 CAxCP = CP.cross(AC);
-		float u_num = N.dot(CAxCP);
-		if(u_num < 0) continue;
-
-		double nom = N.dot(N);
-		double u = u_num/nom;
-		double v = v_num/nom;
-
-		if(hit<min_dist)
+		if(hit<r.t)
 		{
+			vec4 N = edge1.cross(edge2);
+			N.normalize();
 			// std::cout << "we have a hit!" << std::endl;
 			min_dist = hit;
 			r.t = hit;
@@ -98,7 +121,7 @@ vec4 mesh::diffuse()
 
 vec4 mesh::reflect()
 {
-	return vec4(1, 0, 0);
+	return vec4(1, 1, 1);
 }
 
 void mesh::readobj(std::string& filepath)

@@ -91,7 +91,7 @@ vec4 sphere::get_normal(const vec4& p)
 
 vec4 sphere::diffuse()
 {
-	return color*.75;//*diffuse_mult;
+	return color*diffuse_mult;
 }
 
 vec4 sphere::reflect()
