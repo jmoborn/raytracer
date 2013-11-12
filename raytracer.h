@@ -4,9 +4,11 @@
 #include <math.h>
 #include <algorithm>
 #include <limits>
+#include <time.h>
 
 #include "mat4.h"
 #include "vec4.h"
+#include "material.h"
 #include "sphere.h"
 #include "mesh.h"
 #include "pixelmap.h"
@@ -24,6 +26,7 @@ public:
 	std::vector<sphere*> lights;
 
 	int max_depth;
+	double ambience;
 
 	//constants
 	static const double PI = 3.141592653589;

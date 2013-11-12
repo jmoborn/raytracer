@@ -17,7 +17,6 @@ pixelmap::pixelmap(int w, int h)
 
 pixelmap::~pixelmap()
 {
-	//TODO free this memory completely
 	for(int i=0; i<width; i++)
 	{
 		delete [] pixels[i];

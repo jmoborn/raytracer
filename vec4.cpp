@@ -54,10 +54,10 @@ vec4 vec4::cross(vec4& v)
 
 void vec4::normalize()
 {
-	double l = length();
-	x /= l;
-	y /= l;
-	z /= l;
+	double l_inv = 1/length();
+	x *= l_inv;
+	y *= l_inv;
+	z *= l_inv;
 }
 
 void vec4::clamp(double limit)
@@ -142,9 +142,6 @@ vec4 & vec4::operator*=(const double c)
 vec4 & vec4::operator*=(const mat4& m)
 {	
 	double mx = m(0,0)*x + m(0,1)*y + m(0,2)*z + m(0,3)*w;
-	// std::cout << m(0,0)*x << " " << m(0,1)*y << " " <<  m(0,2)*z << " " << m(0,3)*w << std::endl;
-	// std::cout << x << " " << y << " " <<  z << " " << w << std::endl;
-	// std::cout << m(0,1) << std::endl;
 	double my = m(1,0)*x + m(1,1)*y + m(1,2)*z + m(1,3)*w;
 	double mz = m(2,0)*x + m(2,1)*y + m(2,2)*z + m(2,3)*w;
 	double mw = m(3,0)*x + m(3,1)*y + m(3,2)*z + m(3,3)*w;
@@ -177,9 +174,6 @@ vec4 operator*(const mat4& m, const vec4& v)
 	double mvy = m(1,0)*v.x + m(1,1)*v.y + m(1,2)*v.z + m(1,3)*v.w;
 	double mvz = m(2,0)*v.x + m(2,1)*v.y + m(2,2)*v.z + m(2,3)*v.w;
 	double mvw = m(3,0)*v.x + m(3,1)*v.y + m(3,2)*v.z + m(3,3)*v.w;
-	// std::cout << m(0,0) << "*" <<v.x << " + "<<m(0,1) << "*" <<v.y << " + "<<m(0,2) << "*" <<v.z << std::endl;
-	// std::cout << m(1,0) << "*" <<v.x << " + "<<m(1,1) << "*" <<v.y << " + "<<m(1,2) << "*" <<v.z << std::endl;
-	// std::cout << m(2,0) << "*" <<v.x << " + "<<m(2,1) << "*" <<v.y << " + "<<m(2,2) << "*" <<v.z << std::endl;
 	return vec4(mvx, mvy, mvz, mvw);
 }
 vec4 operator*(const vec4& v, const double c)
@@ -214,26 +208,3 @@ vec4 ray::end()
 {
 	return this->o + (this->d*this->t);
 }
-
-// int main()
-// {
-// 	mat4 m;
-// 	m(0,3) = 3;
-// 	m(1,3) = 2;
-// 	m(2,3) = 1;
-// 	//m(0,1) = 1;
-
-// 	vec4 v(1,2,3);
-// 	vec4 a;
-// 	v *= m;
-// 	a = m*v;
-// 	std::cout << "a: "<<  a.x << ", " << a.y << ", " << a.z << ", " << a.w << std::endl;
-// // 	vec4 a(1,3,-5);
-// // 	vec4 b(4,-2,-1);
-// // 	double dot = a.dot(b);
-// // 	std::cout << dot << std::endl;
-// // 	vec4 v1(3, -3, 1);
-// // 	vec4 v2(4, 9, 2);
-// // 	vec4 c = v1.cross(v2);
-// // 	std::cout << "c: "<<  c.x << ", " << c.y << ", " << c.z << ", " << c.w << std::endl;
-// }

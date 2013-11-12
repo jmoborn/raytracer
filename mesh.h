@@ -9,15 +9,18 @@
 #include <vector>
 #include <limits>
 #include <cmath>
+#include <algorithm>
 #include "vec4.h"
+#include "material.h"
 #include "object.h"
 
 class face {
 public:
-	face(std::vector<int> pts, std::vector<int> txts);
+	face(std::vector<int> pts, std::vector<int> txs, std::vector<int> nms);
 	~face(){};
 
 	std::vector<int> pnts;
+	std::vector<int> nrms;
 	std::vector<int> txts;
 
 private:
@@ -27,21 +30,25 @@ private:
 class mesh : public object {
 public:
 	mesh();
-	mesh(std::string filepath, vec4 c=vec4(.5,.5,.5));
+	mesh(std::string filepath, material m=material());
 	~mesh(){};
 	bool intersect(ray& r);
 	vec4 get_normal(const vec4& p);
-	vec4 diffuse();
-	vec4 reflect();
 
 	std::vector<vec4> verts;
+	std::vector<vec4> norms;
 	std::vector<face> faces;
 	std::vector<vec2> texts;
 
-	vec4 color;
-
 private:
 	void readobj(std::string& filepath);
+
+	double xmin;
+	double xmax;
+	double ymin;
+	double ymax;
+	double zmin;
+	double zmax;
 
 };
 

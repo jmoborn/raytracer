@@ -1,9 +1,10 @@
 #include "mesh.h"
 
-face::face(std::vector<int> pts, std::vector<int> txs)
+face::face(std::vector<int> pts, std::vector<int> txs, std::vector<int> nms)
 {
 	this->pnts = pts;
 	this->txts = txs;
+	this->nrms = nms;
 
 	// for(int i=0; i<pts.size(); i++)
 	// {
@@ -17,59 +18,52 @@ face::face(std::vector<int> pts, std::vector<int> txs)
 
 mesh::mesh(){}
 
-mesh::mesh(std::string filepath, vec4 c)
+mesh::mesh(std::string filepath, material m)
 {
+	xmin = ymin = zmin = std::numeric_limits<double>::infinity();
+	xmax = ymax = zmax = -std::numeric_limits<double>::infinity();
 	readobj(filepath);
-	color = c;
+	this->shader = m;
 }
 
 bool mesh::intersect(ray& r)
 {
-	double min_dist = std::numeric_limits<double>::infinity();
+	
 	int closest_face = -1;
+	//check bounding box first
+	//for x
+	double t0 = 0;
+	double t1 = std::numeric_limits<double>::infinity();
+	double invRayDir = 1.0/r.d.x;
+	double tNear = (xmin - r.o.x)*invRayDir;
+	double tFar  = (xmax - r.o.x)*invRayDir;
+	if(tNear > tFar) std::swap(tNear, tFar);
+	t0 = tNear > t0 ? tNear : t0;
+	t1 = tFar < t1 ? tFar : t1;
+	if(t0 > t1) return false;
+	//for y
+	invRayDir = 1.0/r.d.y;
+	tNear = (ymin - r.o.y)*invRayDir;
+	tFar  = (ymax - r.o.y)*invRayDir;
+	if(tNear > tFar) std::swap(tNear, tFar);
+	t0 = tNear > t0 ? tNear : t0;
+	t1 = tFar < t1 ? tFar : t1;
+	if(t0 > t1) return false;
+	//for z
+	invRayDir = 1.0/r.d.z;
+	tNear = (zmin - r.o.z)*invRayDir;
+	tFar  = (zmax - r.o.z)*invRayDir;
+	if(tNear > tFar) std::swap(tNear, tFar);
+	t0 = tNear > t0 ? tNear : t0;
+	t1 = tFar < t1 ? tFar : t1;
+	if(t0 > t1) return false;
+
+	double min_dist = std::numeric_limits<double>::infinity();
 	for(int i=0; i<faces.size(); i++)
 	{
 		vec4 A = verts[faces[i].pnts[0]];
 		vec4 B = verts[faces[i].pnts[1]];
 		vec4 C = verts[faces[i].pnts[2]];
-		// vec4 A(-.5, 0, -1.9);
-		// vec4 B(.25, -.4, -2);
-		// vec4 C(-.5, 0, -2);
-		// vec4 B(.25, -.4, -2);
-		// vec4 C(.5, .25, -2);
-		// vec4 AB = B - A;
-		// vec4 AC = C - A;
-		// vec4 N = AB.cross(AC);
-		// double n_dot_r = N.dot(r.d);
-		// if(n_dot_r==0) continue;
-		// double D = N.dot(A);
-		// double hit = -(N.dot(r.o) + D)/n_dot_r;
-		// if(hit<0) continue;
-		// double tmp = r.t;
-		// r.t = hit;
-		// vec4 P = r.end();
-		// r.t = tmp;
-		// // N.normalize();
-
-		// vec4 AP = P - A;
-		// vec4 ABxAP = AB.cross(AP);
-		// double v_num = N.dot(ABxAP);
-		// if(v_num<0) continue;
-
-		// vec4 BP = P - B;
-		// vec4 BC = C - B;
-		// vec4 BCxBP = BC.cross(BP);
-		// if(N.dot(BCxBP)<0) continue;
-
-		// vec4 CP = P - C;
-		// vec4 CA = A - C;
-		// vec4 CAxCP = CA.cross(CP);
-		// float u_num = N.dot(CAxCP);
-		// if(u_num < 0) continue;
-
-		// double nom = N.dot(N);
-		// double u = u_num/nom;
-		// double v = v_num/nom;
 
 		vec4 edge1 = B - A;
 		vec4 edge2 = C - A;
@@ -85,26 +79,28 @@ bool mesh::intersect(ray& r)
 		if(v<0 || (u + v) >1) continue;
 		double hit = (edge2.dot(qvec) * invDet);
 		if(hit<0) continue;
-		// vec4 N = edge1.cross(edge2);
-		// N.normalize();
-		// double D = N.dot(A);
-		// if(D>=0) continue;
-		// double hit = -(N.dot(r.o) + D)/(N.dot(r.d));
 
 		if(hit<r.t)
 		{
-			vec4 N = edge1.cross(edge2);
-			N.normalize();
-			// std::cout << "we have a hit!" << std::endl;
+			// vec4 N = edge1.cross(edge2);
+			// vec4 N = (norms[faces[i].nrms[0]] + norms[faces[i].nrms[1]] + norms[faces[i].nrms[2]]) * (1.0/3.0);
+			// std::cout << "origin " << A.x << " " << A.y << " " << A.z << std::endl;
+			// std::cout << "u axis " << B.x << " " << B.y << " " << B.z << std::endl;
+			// std::cout << "v axis " << C.x << " " << C.y << " " << C.z << std::endl;
+			// std::cout << "barycentric u: " << u << std::endl;
+			// std::cout << "barycentric v: " << v << std::endl;
+			// std::cout << "normal x" << norms[faces[i].nrms[0]].x << " " << norms[faces[i].nrms[0]].y << " " << norms[faces[i].nrms[0]].z << std::endl;
+			// std::cout << "normal y" << norms[faces[i].nrms[1]].x << " " << norms[faces[i].nrms[1]].y << " " << norms[faces[i].nrms[1]].z << std::endl;
+			// std::cout << "normal x" << norms[faces[i].nrms[2]].x << " " << norms[faces[i].nrms[2]].y << " " << norms[faces[i].nrms[2]].z << std::endl;
+			// vec4 N = norms[faces[i].nrms[0]]*u + norms[faces[i].nrms[1]]*v + norms[faces[i].nrms[2]]*hit;
+			vec4 N = norms[faces[i].nrms[1]]*u + norms[faces[i].nrms[2]]*v + norms[faces[i].nrms[0]]*(1 - u - v);
 			min_dist = hit;
 			r.t = hit;
-			N.normalize();
 			r.hit_norm = N;
 			r.hit_color = diffuse();
 			closest_face = i;
 		}
 	}
-	// std::cout << min_dist << std::endl;
 	if(closest_face!=-1) return true;
 	else return false;
 }
@@ -112,16 +108,6 @@ bool mesh::intersect(ray& r)
 vec4 mesh::get_normal(const vec4& p)
 {
 	return vec4(0, 1, 0);
-}
-
-vec4 mesh::diffuse()
-{
-	return color;
-}
-
-vec4 mesh::reflect()
-{
-	return vec4(1, 1, 1);
 }
 
 void mesh::readobj(std::string& filepath)
@@ -142,31 +128,37 @@ void mesh::readobj(std::string& filepath)
 		{
 			std::string sx, sy, sz;
 			ss >> sx >> sy >> sz;
-			vec4 v(vec4(atof(sx.c_str()), atof(sy.c_str()), atof(sz.c_str())));
+			double px = atof(sx.c_str());
+			double py = atof(sy.c_str());
+			double pz = atof(sz.c_str());
+			if(px>xmax) xmax = px;
+			if(py>ymax) ymax = py;
+			if(pz>zmax) zmax = pz;
+			if(px<xmin) xmin = px;
+			if(py<ymin) ymin = py;
+			if(pz<zmin) zmin = pz;
+			vec4 v(px, py, pz);
 			verts.push_back(v);
 		}
 		else if (tok=="vt")
 		{
 			std::string sx, sy;
 			ss >> sx >> sy;
-			vec2 v(vec2(atof(sx.c_str()), atof(sy.c_str())));
+			vec2 v(atof(sx.c_str()), atof(sy.c_str()));
 			texts.push_back(v);
 		}
-		else if (tok=="n")
+		else if (tok=="vn")
 		{
-			// std::string num;
-			// ss >> num;
-			// double x = atof(num.c_str());
-			// ss >> num;
-			// double y = atof(num.c_str());
-			// ss >> num;
-			// double z = atof(num.c_str());
+			std::string nx, ny, nz;
+			ss >> nx >> ny >> nz;
+			vec4 v(atof(nx.c_str()), atof(ny.c_str()), atof(nz.c_str()));
+			norms.push_back(v);
 		}
 		else if (tok=="f")
 		{
 			std::vector<int> face_pts;
 			std::vector<int> face_txs;
-			//add normals
+			std::vector<int> face_nms;
 			std::string face_str;
 			ss >> face_str;
 			while(!ss.eof())
@@ -175,25 +167,15 @@ void mesh::readobj(std::string& filepath)
 				sscanf(face_str.c_str(), "%d/%d/%d", &pt, &vt, &nm);
 				face_pts.push_back(pt-1);
 				face_txs.push_back(vt-1);
-				//add normal
+				face_nms.push_back(nm-1);
 				ss >> face_str;
 			}
-			face f(face_pts, face_txs);
+			face f(face_pts, face_txs, face_nms);
 			faces.push_back(f);
 		}
 	}
+
+	std::cout << "verts: " << verts.size() << std::endl;
+	std::cout << "norms: " << norms.size() << std::endl;
 	fclose(objfile);
 }
-
-// int main()
-// {
-// 	mesh m("crayon_box.obj");
-// 	for(int i=0; i<m.faces.size(); i++)
-// 	{
-// 		for(int j=0; j<m.faces[i].pnts.size(); j++)
-// 		{
-// 			std::cout << m.faces[i].pnts[j] << " ";
-// 		}
-// 		std::cout << std::endl;
-// 	}
-// }

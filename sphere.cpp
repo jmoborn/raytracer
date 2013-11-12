@@ -1,21 +1,10 @@
 #include "sphere.h"
 
-sphere::sphere(double radius, vec4 center)
+sphere::sphere(double radius, vec4 center, material m)
 {
 	this->r = radius;
 	this->c = center;
-	this->color = (0.5, 0.5, 0.5);
-	this->diffuse_mult = 1.0;
-	this->reflect_mult - 0.0;
-}
-
-sphere::sphere(double radius, vec4 center, vec4 color, double diff)
-{
-	this->r = radius;
-	this->c = center;
-	this->color = color;
-	this->diffuse_mult = diff;
-	this->reflect_mult = 1.0 - diff;
+	this->shader = m;
 }
 
 /*
@@ -76,25 +65,9 @@ bool sphere::intersect(ray& v)
 		}
 		return true;
 	}
-	
-	// if(root >0)
-	// {
-	// 	v.t = root;
-	// 	return true;
-	// }
 }
 
 vec4 sphere::get_normal(const vec4& p)
 {
 	return (p - this->c)*(1/this->r);
-}
-
-vec4 sphere::diffuse()
-{
-	return color*diffuse_mult;
-}
-
-vec4 sphere::reflect()
-{
-	return vec4(1,1,1)*reflect_mult;
 }
