@@ -90,7 +90,8 @@ mat4 & mat4::operator*=(const mat4& m)
 			newdata[i][j] = sum;
 		}
 	}
-	std::copy(newdata, newdata + 4, data);
+	// std::copy(newdata, newdata + 4, data);
+	std::copy(&newdata[0][0], &newdata[0][0] + 4*4, &data[0][0]);
 	return *this;
 }
 
