@@ -1,5 +1,8 @@
 #include <string>
 #include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sstream>
 #include <vector>
 #include <math.h>
 #include <algorithm>
@@ -18,16 +21,25 @@ public:
 	raytracer();
 	~raytracer();
 
-	vec4 shade(ray& v, int self=-1);
+	vec4 shade(ray& v, int depth, int self=-1);
 	vec4 trace_ray(ray& v, int depth, int self);
-	bool trace_shadow(ray& v, int self);
+	double trace_shadow(ray& v, int self, int light);
+	void load_scene(std::string& scenefile);
+	double randd();
+	double randd_negative();
 
+	std::vector<material*> mtls;
 	std::vector<object*> objs;
 	std::vector<sphere*> lights;
 
 	int max_depth;
+	int shadow_samples;
 	double ambience;
+	double ray_tolerance;
 
 	//constants
 	static const double PI = 3.141592653589;
+
+private:
+	vec4 read_vector(std::stringstream& ss);
 };

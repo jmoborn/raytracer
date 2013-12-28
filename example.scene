@@ -1,0 +1,21 @@
+# m -> material 
+# m diff.r diff.g diff.b refl.r refl.g refl.b diff ref spec fract ior
+m 1.0 1.0 1.0 1.0 1.0 1.0 0.15 1.0 32.0 0.0 1.0
+m 1.0 1.0 1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0
+m 1.0 0.0 0.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0
+m 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0
+
+# s -> sphere
+# s radius mtl_index pos.x pos.y pos.z
+s 0.25 0 .396 -.42 -1.579
+
+# o -> object
+# o example.obj mtl_index pos.x pos.y pos.z rot.x rot.y rot.z scale.x scale.y scale.z
+o geo/floor_ceil.obj 1 0.0 0.0 0.0 0.0 0.0 0.0 1.0 1.0 1.0
+o geo/left_wall.obj 2 0.0 0.0 0.0 0.0 0.0 0.0 1.0 1.0 1.0
+o geo/right_wall.obj 3 0.0 0.0 0.0 0.0 0.0 0.0 1.0 1.0 1.0
+# o geo/sphere.obj 0 0.0 0.0 0.0 0.0 0.0 0.0 1.0 1.0 1.0
+
+# l -> light
+# l radius pos.x pos.y pos.z color.r color.g color.b
+l 0.5 -0.25 1.0 -1.0 1.0 1.0 1.0

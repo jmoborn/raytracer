@@ -115,7 +115,7 @@ void mesh::readobj(std::string& filepath)
 	FILE *objfile = fopen(filepath.c_str(), "r");
 	if(objfile==NULL)
 	{
-		printf("Error loading file\n");
+		std::cout << "Error loading file " << filepath << std::endl;
 	}
 	char line[128];
 	while (fgets(line, sizeof(line), objfile))
