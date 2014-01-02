@@ -202,6 +202,7 @@ ray::ray(vec4 origin, vec4 direction)
 	this->o = origin;
 	this->d = direction;
 	this->t = std::numeric_limits<double>::infinity();
+	this->refract_obj = -1;
 }
 
 vec4 ray::end()

@@ -20,6 +20,7 @@ public:
 	virtual bool intersect(ray& r)=0;
 	virtual vec4 diffuse();
 	virtual vec4 reflect();
+	virtual vec4 refract();
 
 	material shader;
 };

@@ -1,4 +1,5 @@
-CXX=g++
+CXX=g++ -O3
+# CXX=g++ -g -O0
 
 LIBS=
 

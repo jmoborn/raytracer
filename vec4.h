@@ -70,7 +70,7 @@ public:
 
 class ray {
 public:
-	ray(vec4 origin, vec4 direction);
+	ray(vec4 origin=vec4(0,0,0), vec4 direction=vec4(0,0,0));
 	~ray(){};
 
 	vec4 end();
@@ -78,6 +78,7 @@ public:
 	vec4 o;
 	vec4 d;
 	double t;
+	double refract_obj;
 	vec4 hit_norm;
 	vec4 hit_color;
 };

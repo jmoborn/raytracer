@@ -9,3 +9,8 @@ vec4 object::reflect()
 {
 	return shader.reflect_color*shader.reflect;
 }
+
+vec4 object::refract()
+{
+	return shader.diffuse_color*shader.refract;
+}

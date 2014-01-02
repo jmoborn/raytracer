@@ -98,25 +98,18 @@ vec4 raytracer::shade(ray& v, int depth, int self)
 		light.normalize();
 		pt += (light*ray_tolerance);
 		ray s(pt, light);
-		// if(!trace_shadow(s, self, l))
-		// {
-			double shadow_mult = trace_shadow(s, self, l);
-			double n_dot_l = v.hit_norm.dot(light);
-			vec4 reflect = v.hit_norm*(2*n_dot_l) - light;
-			vec4 eye = v.d*(-1);
-			reflect.normalize();
-			color += v.hit_color*ambience + v.hit_color * lights[l]->diffuse() * std::max(0.0, n_dot_l);
-			double phong = objs[self]->shader.specular;
-			if(phong!=0)
-				color  += lights[l]->diffuse() * pow(std::max(0.0, eye.dot(reflect)), phong);
-			color *= shadow_mult;
-			if(depth==0)
-				color += ambience;
-		// }
-		// else
-		// {
-		// 	color += ambience;
-		// }
+		double shadow_mult = trace_shadow(s, self, l);
+		double n_dot_l = v.hit_norm.dot(light);
+		vec4 reflect = v.hit_norm*(2*n_dot_l) - light;
+		vec4 eye = v.d*(-1);
+		reflect.normalize();
+		color += v.hit_color*ambience + v.hit_color * lights[l]->diffuse() * std::max(0.0, n_dot_l);
+		double phong = objs[self]->shader.specular;
+		if(phong!=0)
+			color  += lights[l]->diffuse() * pow(std::max(0.0, eye.dot(reflect)), phong);
+		color *= shadow_mult;
+		if(depth==0)
+			color += ambience;
 	}
 	return color;
 }
@@ -128,7 +121,7 @@ vec4 raytracer::trace_ray(ray& v, int depth, int self)
 	vec4 color;
 	for(int o=0; o<objs.size(); o++)
 	{
-		if(o!=self&&objs[o]->intersect(v))
+		if(objs[o]->intersect(v))
 		{
 			if(v.t<min_dist)
 			{
@@ -141,25 +134,53 @@ vec4 raytracer::trace_ray(ray& v, int depth, int self)
 	{
 		v.hit_norm.normalize();
 		color += shade(v, depth, closest_obj);
-		//calculate reflection ray
-		if((objs[closest_obj]->shader.reflect)&&(depth<max_depth))
+		//do we have reflection or refraction?
+		if((objs[closest_obj]->shader.reflect > 0)||(objs[closest_obj]->shader.refract > 0)&&(depth<max_depth))
 		{
 			vec4 org = v.end();
 			vec4 inc = v.d*(-1);
-			vec4 dir = v.hit_norm*(v.hit_norm.dot(inc)*2) - inc;
-			ray r(org, dir);
-			color += objs[closest_obj]->reflect()*trace_ray(r, depth+1, closest_obj);
-			//calculate refraction ray
-			if(objs[closest_obj]->shader.refract)
+			vec4 refl_color, fract_color;
+			double n1, n2;
+			ray r;
+			if(v.refract_obj == closest_obj)
 			{
-				std::cout << "refracting" << std::endl;
-				double iof = 1.5;
-				double c1 = -v.hit_norm.dot(inc);
-				double c2 = sqrt(1-iof*iof*(1-c1*c1));
-				vec4 fract = inc*iof + v.hit_norm * (iof*c1 - c2);
-				ray f(org, fract);
-				color += trace_ray(f, depth+1, closest_obj)*0.5;
+				v.hit_norm *= -1;
+				r.refract_obj = -1;
 			}
+			//calculate reflection ray
+			if(objs[closest_obj]->shader.reflect > 0&&(depth<max_depth))
+			{
+				vec4 dir = v.hit_norm*(v.hit_norm.dot(inc)*2) - inc;
+				vec4 reflect_org = org + (dir*ray_tolerance);
+				r.o = reflect_org;
+				r.d = dir;
+				refl_color = objs[closest_obj]->reflect()*trace_ray(r, depth+1, closest_obj);
+			}
+			//calculate refraction ray
+			if(objs[closest_obj]->shader.refract > 0&&(depth<max_depth))
+			{
+				n1 = (self == -1) ? 1.0 : objs[self]->shader.ior;
+				n2 = (v.refract_obj==closest_obj) ? 1.0 : objs[closest_obj]->shader.ior;
+				double iof = n1/n2;
+				double c1 = -v.hit_norm.dot(v.d);
+				double c2 = sqrt(1-iof*iof*(1-c1*c1));
+				vec4 fract = v.d*iof + v.hit_norm * (iof*c1 - c2);
+				fract.normalize();
+				vec4 refract_org = org + (fract*ray_tolerance);
+				ray f(refract_org, fract);
+				f.refract_obj = (v.refract_obj==closest_obj) ? -1.0 : closest_obj; 
+				fract_color = objs[closest_obj]->refract()*trace_ray(f, depth+1, closest_obj);
+			}
+			//fresnel effect with schlick's approximation
+			if(objs[closest_obj]->shader.reflect > 0&&objs[closest_obj]->shader.refract > 0)
+			{
+				double R0s = ((n1 - n2)*(n1 - n2))/((n1+n2)*(n1+n2));
+				double R0 = R0s*R0s;
+				double R = R0 + (1-R0)*pow((1-v.hit_norm.dot(inc)), 5.0);
+				refl_color *= R;
+				fract_color *= (1-R);
+			}
+			color += (refl_color + fract_color);
 		}
 	}
 	else
@@ -190,23 +211,22 @@ double raytracer::trace_shadow(ray& v, int self, int light)
 	for(int i=0; i<this->shadow_samples; i++)
 	{
 		ray vs = v;
-		double phi = randd()*2*PI;
-		double theta = randd()*2*PI;
-		double r = randd()*this->lights[light]->r;
-		double sin_phi = sin(phi);
-		vec4 offset(r*sin_phi*cos(theta), r*sin_phi*sin(theta), r*cos(phi));
-		// std::cout << offset.x << " " << offset.y << " " << offset.z << std::endl;
+		double x = randd_negative();
+		double y = randd_negative();
+		double z = randd_negative();
+		vec4 offset(x,y,z);
+		offset.normalize();
+		offset *= this->lights[light]->r;
 		vec4 new_dir = (this->lights[light]->c + offset) - vs.o;
 		new_dir.normalize();
 		vs.d = new_dir;
-		// std::cout << "vs " << vs.d.x << " " << vs.d.y << " " << vs.d.z << std::endl;
-		// std::cout << "vl " << vl.d.x << " " << vl.d.y << " " << vl.d.z << std::endl;
 		for(int o=0; o<objs.size(); o++)
 		{
 			bool hit_o = objs[o]->intersect(vs);
-			if(o!=self&&hit_o&&vs.t<light_dist)
+			if(hit_o&&vs.t<light_dist)
 			{
 				hits++;
+				break;
 			}
 		}
 	}
@@ -221,7 +241,7 @@ int main()
 	int image_width = 512;
 	int image_height = 512;//384;
 	vec4 look_from(0,0,1);
-	double fov = 60.0;//degrees
+	double fov = 45.0;//degrees
 	fov *= (r.PI/180.0);//radians
 	//REMOVE LINE BELOW!!!
 	// fov = 1.10714872*2;
@@ -350,10 +370,6 @@ int main()
 	//start timer
 	clock_t start = clock();
 
-	// vec4 dir(0,0,-1);
-	// ray v(look_from, dir);
-	// r.trace_ray(v, 0, -1);
-
 	int total_pixels = image_width*image_height;
 	double last_report = 0;
 
@@ -377,7 +393,6 @@ int main()
 					double yoff = r.randd_negative()*pixel_slice;
 					vec4 dir(x+(pixel_slice*m)+xoff,y+(pixel_slice*n)+yoff,0);
 					dir -= look_from;
-					// std::cout << i << ", " << j << ": " << dir.x << " " << dir.y << " " << dir.z << std::endl;
 					dir.normalize();
 					ray v(look_from, dir);
 					color += r.trace_ray(v, 0, -1);
@@ -390,7 +405,7 @@ int main()
 			if(decimal-last_report > 0.1)
 			{
 				last_report = decimal;
-				std::cout << decimal*100.0 << "\%" << std::endl;
+				std::cout << (int)(decimal*100.0) << "\%" << std::endl;
 			}
 			
 		}
