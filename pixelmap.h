@@ -10,6 +10,7 @@
 class pixelmap{
 public:
 	pixelmap(int height, int width);
+	pixelmap(std::string filename);
 	~pixelmap();
 
 	void setpixel(int x, int y, vec4 c);
@@ -24,6 +25,7 @@ public:
 	int height;
 
 private:
+	void readppm(std::string filename);
 	vec4 **pixels;
 
 };

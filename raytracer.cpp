@@ -4,7 +4,8 @@ raytracer::raytracer()
 {
 	srand(time(NULL));
 	max_depth = 3;
-	shadow_samples = 16;
+	shadow_samples = 4;
+	samples = 4;
 	ambience = 0.1;
 	ray_tolerance = 0.001;
 	std::string scenefile = "example.scene";
@@ -135,7 +136,7 @@ vec4 raytracer::trace_ray(ray& v, int depth, int self)
 		v.hit_norm.normalize();
 		color += shade(v, depth, closest_obj);
 		//do we have reflection or refraction?
-		if((objs[closest_obj]->shader.reflect > 0)||(objs[closest_obj]->shader.refract > 0)&&(depth<max_depth))
+		if(((objs[closest_obj]->shader.reflect > 0)||(objs[closest_obj]->shader.refract > 0))&&(depth<max_depth))
 		{
 			vec4 org = v.end();
 			vec4 inc = v.d*(-1);
@@ -148,7 +149,7 @@ vec4 raytracer::trace_ray(ray& v, int depth, int self)
 				r.refract_obj = -1;
 			}
 			//calculate reflection ray
-			if(objs[closest_obj]->shader.reflect > 0&&(depth<max_depth))
+			if(objs[closest_obj]->shader.reflect > 0)
 			{
 				vec4 dir = v.hit_norm*(v.hit_norm.dot(inc)*2) - inc;
 				vec4 reflect_org = org + (dir*ray_tolerance);
@@ -157,7 +158,7 @@ vec4 raytracer::trace_ray(ray& v, int depth, int self)
 				refl_color = objs[closest_obj]->reflect()*trace_ray(r, depth+1, closest_obj);
 			}
 			//calculate refraction ray
-			if(objs[closest_obj]->shader.refract > 0&&(depth<max_depth))
+			if(objs[closest_obj]->shader.refract > 0)
 			{
 				n1 = (self == -1) ? 1.0 : objs[self]->shader.ior;
 				n2 = (v.refract_obj==closest_obj) ? 1.0 : objs[closest_obj]->shader.ior;
@@ -247,7 +248,7 @@ int main()
 	// fov = 1.10714872*2;
 	pixelmap pic(image_width, image_height);
 	double aspect_ratio = (double)image_height/(double)image_width;
-	double samples = 16;
+	double samples = 4;
 	int samples1D = sqrt(samples);
 
 	//calculate image plane size in world space

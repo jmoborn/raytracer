@@ -36,6 +36,7 @@ public:
 	int shadow_samples;
 	double ambience;
 	double ray_tolerance;
+	double samples;
 
 	//constants
 	static const double PI = 3.141592653589;

@@ -15,6 +15,11 @@ pixelmap::pixelmap(int w, int h)
 	}
 }
 
+pixelmap::pixelmap(std::string filename)
+{
+
+}
+
 pixelmap::~pixelmap()
 {
 	for(int i=0; i<width; i++)
@@ -50,4 +55,12 @@ void pixelmap::writeppm(std::string filename)
   		file << "\n";
   	}
   	file.close();
+}
+
+void pixelmap::readppm(std::string filename)
+{
+	std::ifstream file(filename.c_str());
+
+
+	file.close();
 }
