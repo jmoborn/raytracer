@@ -60,7 +60,7 @@ void pixelmap::writeppm(std::string filename)
 void pixelmap::readppm(std::string filename)
 {
 	std::ifstream file(filename.c_str());
-
+    //TODO: write this function
 
 	file.close();
 }

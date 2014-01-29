@@ -6,14 +6,6 @@ face::face(std::vector<int> pts, std::vector<int> txs, std::vector<int> nms)
 	this->txts = txs;
 	this->nrms = nms;
 
-	// for(int i=0; i<pts.size(); i++)
-	// {
-	// 	this->pnts[i] = pts[i];
-	// }
-	// for(int i=0; i<txs.size(); i++)
-	// {
-	// 	this->txts[i] = txs[i];
-	// }
 }
 
 mesh::mesh(){}
@@ -82,17 +74,6 @@ bool mesh::intersect(ray& r)
 
 		if(hit<r.t)
 		{
-			// vec4 N = edge1.cross(edge2);
-			// vec4 N = (norms[faces[i].nrms[0]] + norms[faces[i].nrms[1]] + norms[faces[i].nrms[2]]) * (1.0/3.0);
-			// std::cout << "origin " << A.x << " " << A.y << " " << A.z << std::endl;
-			// std::cout << "u axis " << B.x << " " << B.y << " " << B.z << std::endl;
-			// std::cout << "v axis " << C.x << " " << C.y << " " << C.z << std::endl;
-			// std::cout << "barycentric u: " << u << std::endl;
-			// std::cout << "barycentric v: " << v << std::endl;
-			// std::cout << "normal x" << norms[faces[i].nrms[0]].x << " " << norms[faces[i].nrms[0]].y << " " << norms[faces[i].nrms[0]].z << std::endl;
-			// std::cout << "normal y" << norms[faces[i].nrms[1]].x << " " << norms[faces[i].nrms[1]].y << " " << norms[faces[i].nrms[1]].z << std::endl;
-			// std::cout << "normal x" << norms[faces[i].nrms[2]].x << " " << norms[faces[i].nrms[2]].y << " " << norms[faces[i].nrms[2]].z << std::endl;
-			// vec4 N = norms[faces[i].nrms[0]]*u + norms[faces[i].nrms[1]]*v + norms[faces[i].nrms[2]]*hit;
 			vec4 N = norms[faces[i].nrms[1]]*u + norms[faces[i].nrms[2]]*v + norms[faces[i].nrms[0]]*(1 - u - v);
 			min_dist = hit;
 			r.t = hit;

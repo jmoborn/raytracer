@@ -4,7 +4,7 @@ raytracer::raytracer()
 {
 	srand(time(NULL));
 	max_depth = 3;
-	shadow_samples = 4;
+	shadow_samples = 32;
 	samples = 4;
 	ambience = 0.1;
 	ray_tolerance = 0.001;
@@ -238,14 +238,13 @@ int main()
 {
 	raytracer r;
 	
+	//TODO: read this info from the scene file
 	//define camera properties
 	int image_width = 512;
-	int image_height = 512;//384;
+	int image_height = 512;
 	vec4 look_from(0,0,1);
 	double fov = 45.0;//degrees
 	fov *= (r.PI/180.0);//radians
-	//REMOVE LINE BELOW!!!
-	// fov = 1.10714872*2;
 	pixelmap pic(image_width, image_height);
 	double aspect_ratio = (double)image_height/(double)image_width;
 	double samples = 4;
@@ -256,117 +255,6 @@ int main()
 	double scene_height = tan((fov*aspect_ratio)/2)*2;
 	double pixel_width = scene_width/image_width;
 	double pixel_slice = pixel_width/samples1D;
-
-	//********************Original Test Scene********************
-	// //create objects
-	// sphere s(0.5, vec4(-.5,-.5,-4), vec4(0,0,1), 0.25);
-	// sphere s1(0.33, vec4(.014, -.6, -3.775), vec4(1,1,1), 0.25);
-	// sphere tiny(0.2, vec4(.5,.5, -4), vec4(0,1,0), 0.25);
-	// sphere tinier(0.11, vec4(.362, .459, -3.418), vec4(1,1,0), 0.25);
-	// sphere ref(0.2, vec4(-1.27, -.913, -3.254), vec4(1,0,0), 0.25);
-	// mesh cube("cube.obj", vec4(1.0, 0, 1.0));
-	// r.objs.push_back(&s);
-	// r.objs.push_back(&s1);
-	// r.objs.push_back(&tiny);
-	// r.objs.push_back(&tinier);
-	// r.objs.push_back(&ref);
-	// r.objs.push_back(&cube);
-
-	// //create lights
-	// sphere l1(1.0, vec4(0,0,-3.5), vec4(1.0,1.0,1.0));
-	// sphere l2(0.5, vec4(-1,-.75,-3),  vec4(.3,.3,.3));
-	// r.lights.push_back(&l1);
-	// r.lights.push_back(&l2);
-
-	//********************Scenell********************
-	// sphere s1(.2, vec4(0,.1,-1.2), vec4(.1, .1, .1), .25);
-	// mesh l_tri("l_tri.obj", vec4(1,1,0));
-	// mesh r_tri("r_tri.obj", vec4(0,0,1));
-	// r.objs.push_back(&s1);
-	// r.objs.push_back(&l_tri);
-	// r.objs.push_back(&r_tri);
-
-	// sphere l1(1.0, vec4(0,100,0), vec4(1,1,1));
-	// r.lights.push_back(&l1);
-
-	//********************Diffuse********************
-	// sphere s1(.05, vec4(.35,0,-.1), vec4(1,1,1), 1.0);
-	// sphere s2(.075, vec4(.2,0,-.1), vec4(1,0,0), 1.0);
-	// sphere s3(.3, vec4(-.6,0,0), vec4(0,1,0), 1.0);
-	// mesh m1("tri1.obj", vec4(0,0,1));
-	// mesh m2("tri2.obj", vec4(1,1,0));
-	// r.objs.push_back(&s1);
-	// r.objs.push_back(&s2);
-	// r.objs.push_back(&s3);
-	// r.objs.push_back(&m1);
-	// r.objs.push_back(&m2);
-	// sphere l1(1.0, vec4(100,0,0), vec4(1,1,1));
-	// r.lights.push_back(&l1);
-
-	// material white_reflect(vec4(1,1,1), vec4(1,1,1), .15, 1.0, 32.0, 0.0, 1.0);
-	// material blue_reflect(vec4(0,0,0.5), vec4(1,1,1), 1.0, 1.0, 32.0, 0.0, 1.0);
-	// material orange_reflect(vec4(.75,.25,0), vec4(1,1,1), 1.0, 1.0, 32.0, 0.0, 1.0);
-	// material yellow_reflect(vec4(1,1,0), vec4(1,1,1), 1.0, 1.0, 32.0, 0.0, 1.0);
-	// material red_diffuse(vec4(.5,0,0), vec4(1,1,1), 1.0, 0.20, 32.0, 0.0, 1.0);
-	// material green_diffuse(vec4(0,.5,0), vec4(1,1,1), 1.0, 0.20, 32.0, 0.0, 1.0);
-	// material blue_diffuse(vec4(0,0,.5), vec4(1,1,1), 1.0, 0.20, 32.0, 0.0, 1.0);
-	// material white_small_reflect(vec4(1,1,1), vec4(1,1,1), 1.0, .5, 32.0, 0.0, 1.0);
-
-	// sphere s1(1.5, vec4(3.441, -.121, -12.337), white_reflect);
-	// mesh pyramid("pyramid.obj", orange_reflect);
-	// mesh cube("cube.obj", blue_reflect);
-	// mesh torus("torus.obj", yellow_reflect);
-	// mesh ring1("ring1.obj", white_reflect);
-	// mesh test("normal_test.obj", white_reflect);
-	// mesh ring2("ring2.obj", white_reflect);
-	// mesh ring3("ring3.obj", white_reflect);
-	// mesh ring4("ring4.obj", white_reflect);
-	// mesh ring5("ring5.obj", white_reflect);
-	// mesh ring6("ring6.obj", white_reflect);
-	// mesh ring7("ring7.obj", white_reflect);
-	// mesh ring8("ring8.obj", white_reflect);
-	// mesh floorplane("floor.obj", white_small_reflect);
-	// mesh ceiling("ceiling.obj", white_small_reflect);
-	// mesh back("back.obj", red_diffuse);
-	// mesh left("left.obj", blue_diffuse);
-	// mesh right("right.obj", green_diffuse);
-	// r.objs.push_back(&s1);
-	// r.objs.push_back(&pyramid);
-	// r.objs.push_back(&cube);
-	// r.objs.push_back(&torus);
-	// r.objs.push_back(&ring1);
-	// r.objs.push_back(&test);
-	// r.objs.push_back(&ring2);
-	// r.objs.push_back(&ring3);
-	// r.objs.push_back(&ring4);
-	// r.objs.push_back(&ring5);
-	// r.objs.push_back(&ring6);
-	// r.objs.push_back(&ring7);
-	// r.objs.push_back(&ring8);
-	// r.objs.push_back(&floorplane);
-	// r.objs.push_back(&ceiling);
-	// r.objs.push_back(&back);
-	// r.objs.push_back(&left);
-	// r.objs.push_back(&right);
-
-	// sphere l1(1.0, vec4(-1,1,-1));
-	// r.lights.push_back(&l1);
-
-	//DEBUG SCENE LOADER ******************************
-	// material white_reflect(vec4(1,1,1), vec4(1,1,1), .15, 1.0, 32.0, 0.0, 1.0);
-	// sphere s(1.5, vec4(3.441, -.121, -12.337), white_reflect);
-	// std::cout << "radius " << s.r << std::endl;
-	// std::cout << "position " << s.c.x << " " << s.c.y << " " << s.c.z << std::endl;
-	// vec4 tcol = s.diffuse();
-	// std::cout << "diffuse " << tcol.x << " " << tcol.y << " " << tcol.z << std::endl;
-	// r.objs.push_back(&s);
-
-	// sphere l(1.0, vec4(-1,1,-1));
-	// std::cout << "radius " << l.r << std::endl;
-	// std::cout << "position " << l.c.x << " " << l.c.y << " " << l.c.z << std::endl;
-	// vec4 lcol = l.diffuse();
-	// std::cout << "diffuse " << lcol.x << " " << lcol.y << " " << lcol.z << std::endl;
-	// r.lights.push_back(&l);
 
 	//start timer
 	clock_t start = clock();
@@ -414,5 +302,5 @@ int main()
 	pic.writeppm("test.ppm");
 
 	clock_t time_gone_by = clock() - start;
-	std::cout << "TOTAL TIME: " << (double)time_gone_by / ((double)CLOCKS_PER_SEC) << std::endl;
+	std::cout << "TOTAL TIME: " << (double)time_gone_by / ((double)CLOCKS_PER_SEC) << " seconds" << std::endl;
 }
