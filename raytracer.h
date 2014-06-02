@@ -1,3 +1,6 @@
+#ifndef __RAYTRACER_H__
+#define __RAYTRACER_H__
+
 #include <string>
 #include <iostream>
 #include <stdio.h>
@@ -44,3 +47,5 @@ public:
 private:
 	vec4 read_vector(std::stringstream& ss);
 };
+
+#endif

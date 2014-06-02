@@ -17,7 +17,7 @@ pixelmap::pixelmap(int w, int h)
 
 pixelmap::pixelmap(std::string filename)
 {
-
+	readppm(filename);
 }
 
 pixelmap::~pixelmap()
@@ -57,10 +57,65 @@ void pixelmap::writeppm(std::string filename)
   	file.close();
 }
 
+// get next non-whitespace character
+char pixelmap::skipcomment(std::ifstream &file)
+{
+	char next = file.peek();
+	while(next==' '||next=='\n')
+	{
+		file.get();
+		next = file.peek();
+	}
+	char s[256];
+	if(next=='#') file.getline(s, 256);
+	return next;
+}
+
 void pixelmap::readppm(std::string filename)
 {
 	std::ifstream file(filename.c_str());
-    //TODO: write this function
+    //TODO: comments
+    std::string filetype;
+    file >> filetype;
+    std::cout << "filetype: " << filetype << std::endl;
+    if(filetype!="P3") return; //wrong file type
+    char next = skipcomment(file);
+    file >> this->width;
+    std::cout << "width: " << width << std::endl;
+    next = skipcomment(file);
+    file >> this->height;
+    std::cout << "height: " << height << std::endl;
+    next = skipcomment(file);
+    double max;
+    file >> max;
+    next = skipcomment(file);
+    this->pixels = new vec4*[width];
+	for(int i=0; i<width; i++)
+	{
+		pixels[i] = new vec4[height];
+		// for(int j=0; j<height; j++)
+		// {
+
+		// 	vec4 tmp;
+		// 	file >> tmp.x >> tmp.y >> tmp.z;
+		// 	double invmax = 1.0/max;
+		// 	tmp *= invmax;
+		// 	pixels[i][j] = tmp;
+		// }
+	}
+
+	for(int i=height-1; i>=0; i--)
+	{
+		for(int j=0; j<width; j++)
+		{
+			
+			vec4 tmp;
+			file >> tmp.x >> tmp.y >> tmp.z;
+			double invmax = 1.0/max;
+			tmp *= invmax;
+			pixels[j][i] = tmp;
+		}
+	}
 
 	file.close();
 }

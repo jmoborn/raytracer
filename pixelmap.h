@@ -25,6 +25,7 @@ public:
 	int height;
 
 private:
+	char skipcomment(std::ifstream &file);
 	void readppm(std::string filename);
 	vec4 **pixels;
 

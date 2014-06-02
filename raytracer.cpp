@@ -44,6 +44,19 @@ void raytracer::load_scene(std::string& scenefile)
 			ss >> sdiff >> sref >> sspec >> sfract >> sior;
 			material *mat = new material(diff, refl, atof(sdiff.c_str()), atof(sref.c_str()), 
 									   atof(sspec.c_str()), atof(sfract.c_str()), atof(sior.c_str()));
+			char peek = ss.peek();
+			while(peek==' ')
+			{
+				ss.get();
+				ss.peek();
+			}
+			if(ss.peek()!='\n')
+			{
+				std::string map;
+				ss >> map;
+				pixelmap p(map);
+				mat->add_diffuse_map(p);
+			}
 			this->mtls.push_back(mat);
 		}
 		if(tok=="o")
@@ -186,7 +199,7 @@ vec4 raytracer::trace_ray(ray& v, int depth, int self)
 	}
 	else
 	{
-		color += (.2, .2, .2);
+		color += vec4(0.2, 0.2, 0.2);
 	}
 	return color;
 }
@@ -234,10 +247,12 @@ double raytracer::trace_shadow(ray& v, int self, int light)
 	return ((double)(this->shadow_samples - hits))/((double)this->shadow_samples);
 }
 
+const double raytracer::PI;
+
 int main()
 {
 	raytracer r;
-	
+
 	//TODO: read this info from the scene file
 	//define camera properties
 	int image_width = 512;
@@ -303,4 +318,5 @@ int main()
 
 	clock_t time_gone_by = clock() - start;
 	std::cout << "TOTAL TIME: " << (double)time_gone_by / ((double)CLOCKS_PER_SEC) << " seconds" << std::endl;
+	
 }

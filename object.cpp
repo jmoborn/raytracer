@@ -2,7 +2,15 @@
 
 vec4 object::diffuse()
 {
-	return shader.diffuse_color*shader.diffuse;
+	if(shader.has_diff_map)
+	{
+		vec4 map_color;
+		return map_color*shader.diffuse_color*shader.diffuse
+	}
+	else
+	{
+		return shader.diffuse_color*shader.diffuse;
+	}
 }
 
 vec4 object::reflect()

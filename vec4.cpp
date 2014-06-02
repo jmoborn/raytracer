@@ -138,6 +138,7 @@ vec4 & vec4::operator*=(const double c)
 	x *= c;
 	y *= c;
 	z *= c;
+	return *this;
 }
 vec4 & vec4::operator*=(const mat4& m)
 {	

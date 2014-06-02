@@ -1,7 +1,7 @@
 # m -> material 
-# m diff.r diff.g diff.b refl.r refl.g refl.b diff ref spec fract ior
+# m diff.r diff.g diff.b diffmap refl.r refl.g refl.b diff ref spec fract ior diffmap
 m 0.9 0.9 0.9 1.0 1.0 1.0 0.0 1.0 128.0 1.0 1.3
-m 1.0 1.0 1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0
+m 1.0 1.0 1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 hello_world.ppm
 m 1.0 0.0 0.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0
 m 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0
 m 1.0 1.0 1.0 1.0 1.0 1.0 0.2 0.9 32.0 0.0 1.0

@@ -104,6 +104,7 @@ mat4 & mat4::operator*=(const double c)
 			data[i][j] *= c;
 		}
 	}
+	return *this;
 }
 
 mat4 operator*(const mat4& m1, mat4& m2)
