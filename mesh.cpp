@@ -75,10 +75,14 @@ bool mesh::intersect(ray& r)
 		if(hit<r.t)
 		{
 			vec4 N = norms[faces[i].nrms[1]]*u + norms[faces[i].nrms[2]]*v + norms[faces[i].nrms[0]]*(1 - u - v);
+			vec2 U = texts[faces[i].txts[1]]*u + texts[faces[i].txts[2]]*v + texts[faces[i].txts[0]]*(1 - u - v);
+			// std::cout << texts[faces[i].txts[1]].u << ", " << texts[faces[i].txts[1]].v << std::endl;
+			// std::cout << U.u << ", " << U.v << std::endl; 
 			min_dist = hit;
 			r.t = hit;
 			r.hit_norm = N;
-			r.hit_color = diffuse();
+			r.hit_uv = U;
+			r.hit_color = diffuse(U);
 			closest_face = i;
 		}
 	}

@@ -198,6 +198,22 @@ vec2::vec2(double u, double v)
 	this->v = v;
 }
 
+vec2 & vec2::operator*=(const double c)
+{
+	u *= c;
+	v *= c;
+	return *this;
+}
+
+vec2 operator+(const vec2& v1, const vec2& v2)
+{
+	return vec2(v1.u+v2.u, v1.v+v2.v);
+}
+vec2 operator*(const vec2& v, const double c)
+{
+	return vec2(v.u*c, v.v*c);
+}
+
 ray::ray(vec4 origin, vec4 direction)
 {
 	this->o = origin;

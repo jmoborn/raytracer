@@ -14,8 +14,13 @@ material::material(vec4 c, vec4 ref_color, double diff, double ref, double spec,
 
 material::~material(){}
 
-material::add_diffuse_map(pixelmap &p)
+void material::add_diffuse_map(pixelmap &p)
 {
 	this->has_diff_map = true;
 	this->diff_map = p;
+}
+
+vec4 material::get_map_color(vec2 uv)
+{
+	return this->diff_map.getpixel(uv.u, uv.v);
 }

@@ -1,11 +1,12 @@
 #include "object.h"
 
-vec4 object::diffuse()
+vec4 object::diffuse(vec2 uv)
 {
 	if(shader.has_diff_map)
 	{
-		vec4 map_color;
-		return map_color*shader.diffuse_color*shader.diffuse
+		// std::cout << uv.u << ", " << uv.v << std::endl;
+		vec4 map_color = shader.get_map_color(uv);
+		return map_color*shader.diffuse_color*shader.diffuse;
 	}
 	else
 	{

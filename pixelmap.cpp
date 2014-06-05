@@ -20,6 +20,41 @@ pixelmap::pixelmap(std::string filename)
 	readppm(filename);
 }
 
+pixelmap::pixelmap()
+{
+	this->width = 2;
+	this->height = 2;
+	this->pixels = new vec4*[width];
+	for(int i=0; i<width; i++)
+	{
+		pixels[i] = new vec4[height];
+		for(int j=0; j<height; j++)
+		{
+			pixels[i][j] = vec4(0,0,0);
+		}
+	}
+}
+
+pixelmap::pixelmap(const pixelmap &copy)
+{
+	// for(int i=0; i<width; i++)
+	// {
+	// 	delete [] pixels[i];
+	// }
+	// delete [] this->pixels;
+	this->width = copy.width;
+	this->height = copy.height;
+	this->pixels = new vec4*[width];
+	for(int i=0; i<this->width; i++)
+	{
+		this->pixels[i] = new vec4[this->height];
+		for(int j=0; j<height; j++)
+		{
+			this->pixels[i][j] = copy.pixels[i][j];
+		}
+	}
+}
+
 pixelmap::~pixelmap()
 {
 	for(int i=0; i<width; i++)
@@ -37,6 +72,13 @@ void pixelmap::setpixel(int x, int y, vec4 c)
 vec4 pixelmap::getpixel(int x, int y)
 {
 	return this->pixels[x][y];
+}
+
+vec4 pixelmap::getpixel(double u, double v)
+{
+	int i = (u*(double)width);
+	int j = (v*(double)height);
+	return this->pixels[i%width][j%height];
 }
 
 void pixelmap::writeppm(std::string filename)
@@ -113,9 +155,31 @@ void pixelmap::readppm(std::string filename)
 			file >> tmp.x >> tmp.y >> tmp.z;
 			double invmax = 1.0/max;
 			tmp *= invmax;
+			// if(tmp.x<0.5||tmp.y<0.5||tmp.z<0.5)
+			// 	std::cout << tmp.x << ", " << tmp.y << ", " << tmp.z << std::endl;
 			pixels[j][i] = tmp;
 		}
 	}
 
 	file.close();
+}
+
+pixelmap& pixelmap::operator=(const pixelmap copy)
+{
+	// for(int i=0; i<width; i++)
+	// {
+	// 	delete [] pixels[i];
+	// }
+	// delete [] this->pixels;
+	this->width = copy.width;
+	this->height = copy.height;
+	this->pixels = new vec4*[width];
+	for(int i=0; i<this->width; i++)
+	{
+		this->pixels[i] = new vec4[this->height];
+		for(int j=0; j<height; j++)
+		{
+			this->pixels[i][j] = copy.pixels[i][j];
+		}
+	}
 }

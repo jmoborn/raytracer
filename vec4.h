@@ -66,6 +66,11 @@ public:
 
 	double u;
 	double v;
+
+	vec2 & operator*=(const double c);
+
+	friend vec2 operator+(const vec2& v1, const vec2& v2);
+	friend vec2 operator*(const vec2& v, const double c);
 };
 
 class ray {
@@ -81,6 +86,7 @@ public:
 	double refract_obj;
 	vec4 hit_norm;
 	vec4 hit_color;
+	vec2 hit_uv;
 };
 
 #endif

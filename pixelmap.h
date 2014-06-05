@@ -11,10 +11,15 @@ class pixelmap{
 public:
 	pixelmap(int height, int width);
 	pixelmap(std::string filename);
+	pixelmap(const pixelmap &copy);
+	pixelmap();
 	~pixelmap();
 
 	void setpixel(int x, int y, vec4 c);
 	vec4 getpixel(int x, int y);
+
+	//returns the bilinearly interpolated color
+	vec4 getpixel(double u, double v);
 	
 	//pixels should be set from bottom to top, left to right
 	//however ppms are left to right, top to bottom
@@ -23,6 +28,8 @@ public:
 	
 	int width;
 	int height;
+
+	pixelmap& operator=(const pixelmap other);
 
 private:
 	char skipcomment(std::ifstream &file);

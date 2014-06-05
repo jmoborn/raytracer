@@ -18,7 +18,7 @@ public:
 		are only modifiedif the new intersection point is less than t and greater than 0.
 	*/
 	virtual bool intersect(ray& r)=0;
-	virtual vec4 diffuse();
+	virtual vec4 diffuse(vec2 uv=vec2(0,0));
 	virtual vec4 reflect();
 	virtual vec4 refract();
 

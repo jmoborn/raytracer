@@ -48,7 +48,7 @@ void raytracer::load_scene(std::string& scenefile)
 			while(peek==' ')
 			{
 				ss.get();
-				ss.peek();
+				peek = ss.peek();
 			}
 			if(ss.peek()!='\n')
 			{
