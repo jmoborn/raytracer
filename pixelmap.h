@@ -17,9 +17,14 @@ public:
 
 	void setpixel(int x, int y, vec4 c);
 	vec4 getpixel(int x, int y);
+	vec4 getpixel_wrap(int x, int y);
 
 	//returns the bilinearly interpolated color
 	vec4 getpixel(double u, double v);
+
+	vec4 lerp(double x, double x1, double x2, vec4 v1, vec4 v2);
+	vec4 bilerp(double x, double y, double x1, double y1, double x2, double y2, 
+						  vec4 v11, vec4 v12, vec4 v21, vec4 v22);
 	
 	//pixels should be set from bottom to top, left to right
 	//however ppms are left to right, top to bottom

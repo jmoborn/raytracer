@@ -74,11 +74,50 @@ vec4 pixelmap::getpixel(int x, int y)
 	return this->pixels[x][y];
 }
 
+vec4 pixelmap::getpixel_wrap(int x, int y)
+{
+	x %= width;
+	y %= height;
+	// if(x>width||x<0) x = x%width;
+	// if(y>height||y<0) y = y%height;
+	return this->pixels[x][y];
+
+}
+
 vec4 pixelmap::getpixel(double u, double v)
 {
-	int i = (u*(double)width);
-	int j = (v*(double)height);
-	return this->pixels[i%width][j%height];
+	// int i = (u*(double)width);
+	// int j = (v*(double)height);
+	// return this->pixels[i%width][j%height];
+
+	double x = u*this->width;
+	double y = v*this->height;
+	double x2 = round(x) + 0.5;
+	double x1 = round(x) - 0.5;
+	double y2 = round(y) + 0.5;;
+	double y1 = round(y) - 0.5;
+	vec4 v11 = getpixel_wrap((int)x1,(int)y1);
+	vec4 v12 = getpixel_wrap((int)x1,(int)y2);
+	vec4 v21 = getpixel_wrap((int)x2,(int)y1);
+	vec4 v22 = getpixel_wrap((int)x2,(int)y2);
+
+	return bilerp(x, y, x1, y1, x2, y2, v11, v12, v21, v22);
+}
+
+vec4 pixelmap::lerp(double x, double x1, double x2, vec4 v1, vec4 v2)
+{
+	vec4 w1 = v2*((x - x1)/(x2 - x1));
+	vec4 w2 = v1*((x2 - x)/(x2 - x1));
+	return w1 + w2;
+}
+
+vec4 pixelmap::bilerp(double x, double y, double x1, double y1, double x2, double y2, 
+						  vec4 v11, vec4 v12, vec4 v21, vec4 v22)
+{
+	vec4 wx1 = lerp(x, x1, x2, v11, v21);
+	vec4 wx2 = lerp(x, x1, x2, v12, v22);
+	vec4 wy  = lerp(y, y1, y2, wx1, wx2);
+	return wy;
 }
 
 void pixelmap::writeppm(std::string filename)
