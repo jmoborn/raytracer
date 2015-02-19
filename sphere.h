@@ -16,6 +16,7 @@ public:
 	~sphere(){};
 	bool intersect(ray& r);
 	vec4 get_normal(const vec4& p);
+    vec2 get_uv(const vec4& p);
 	double r;
 	vec4 c;
 };

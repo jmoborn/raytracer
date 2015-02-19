@@ -5,10 +5,12 @@ raytracer::raytracer()
 	srand(time(NULL));
 	max_depth = 3;
 	shadow_samples = 32;
-	samples = 4;
+	reflect_samples = 32;
+	refract_samples = 32;
+	samples = 3;
 	ambience = 0.1;
 	ray_tolerance = 0.001;
-	std::string scenefile = "example.scene";
+	std::string scenefile = "pool.scene";
 	load_scene(scenefile);
 }
 
@@ -166,9 +168,27 @@ vec4 raytracer::trace_ray(ray& v, int depth, int self)
 			{
 				vec4 dir = v.hit_norm*(v.hit_norm.dot(inc)*2) - inc;
 				vec4 reflect_org = org + (dir*ray_tolerance);
-				r.o = reflect_org;
-				r.d = dir;
-				refl_color = objs[closest_obj]->reflect()*trace_ray(r, depth+1, closest_obj);
+				vec4 up(0.0,1.0,0.0);
+				vec4 axis_x = dir.cross(up);
+				vec4 axis_y = axis_x.cross(dir);
+				double dist_radius = 0.75;
+				vec4 total_refl_color = vec4(0.0,0.0,0.0);
+				for(int i=0; i<reflect_samples; i++)
+				{
+					ray cur_r(r);
+					double cur_theta = randd()*2.0*PI;
+					double cur_radius = randd()*dist_radius;
+					double cur_x = cur_radius*cos(cur_theta);
+					double cur_y = cur_radius*sin(cur_theta);
+					vec4 cur_dir(dir);
+					cur_dir += (axis_x*cur_x);
+					cur_dir += (axis_y*cur_y);
+					cur_dir.normalize();
+					cur_r.o = reflect_org;
+					cur_r.d = cur_dir;
+					total_refl_color += objs[closest_obj]->reflect()*trace_ray(cur_r, depth+1, closest_obj);
+				}
+				refl_color = total_refl_color*(1.0/reflect_samples);
 			}
 			//calculate refraction ray
 			if(objs[closest_obj]->shader.refract > 0)
@@ -239,6 +259,7 @@ double raytracer::trace_shadow(ray& v, int self, int light)
 			bool hit_o = objs[o]->intersect(vs);
 			if(hit_o&&vs.t<light_dist)
 			{
+				// std::cout << o << std::endl;
 				hits++;
 				break;
 			}
@@ -255,10 +276,10 @@ int main()
 
 	//TODO: read this info from the scene file
 	//define camera properties
-	int image_width = 512;
-	int image_height = 512;
+	int image_width = 256;
+	int image_height = 256;
 	vec4 look_from(0,0,1);
-	double fov = 45.0;//degrees
+	double fov = 40.0;//degrees
 	fov *= (r.PI/180.0);//radians
 	pixelmap pic(image_width, image_height);
 	double aspect_ratio = (double)image_height/(double)image_width;
@@ -299,11 +320,24 @@ int main()
 					dir -= look_from;
 					dir.normalize();
 					ray v(look_from, dir);
+v.debug = 0;
+// if(i==70&&j==(image_height -169)&&m==0&&n==0)
+// {
+// 	v.debug = 1;
+// std::cout << " debugging" << std::endl;
+// }
+// else
+// {
+// 	v.debug = 0;
+// }
+// std::cout << "before trace" << std::endl;
 					color += r.trace_ray(v, 0, -1);
+// std::cout << "after trace" << std::endl;
 				}
 			}
 			color *= 1/samples;
 			color.clamp(1.0);
+			
 			pic.setpixel(i, j, color);
 			double decimal = ((double)((i+1)*(j+1)))/((double)(total_pixels));
 			if(decimal-last_report > 0.1)

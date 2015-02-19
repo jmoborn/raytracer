@@ -31,8 +31,10 @@ bool sphere::intersect(ray& v)
 		if((-B/2)<v.t)
 		{
 			v.t = -B/2;
-			v.hit_norm = get_normal(v.end());
-			v.hit_color = diffuse();
+			vec4 end = v.end();
+			v.hit_norm = get_normal(end);
+			v.hit_uv = get_uv(end);
+			v.hit_color = diffuse(v.hit_uv);
 		}
 		return true;
 	}
@@ -49,8 +51,10 @@ bool sphere::intersect(ray& v)
 			if(root < v.t)
 			{
 				v.t = root;
-				v.hit_norm = get_normal(v.end());
-				v.hit_color = diffuse();
+				vec4 end = v.end();
+				v.hit_norm = get_normal(end);
+				v.hit_uv = get_uv(end);
+				v.hit_color = diffuse(v.hit_uv);
 			}
 			return true;
 		}
@@ -60,8 +64,10 @@ bool sphere::intersect(ray& v)
 		if(root < v.t)
 		{
 			v.t = root;
-			v.hit_norm = get_normal(v.end());
-			v.hit_color = diffuse();
+			vec4 end = v.end();
+			v.hit_norm = get_normal(end);
+			v.hit_uv = get_uv(end);
+			v.hit_color = diffuse(v.hit_uv);
 		}
 		return true;
 	}
@@ -70,4 +76,14 @@ bool sphere::intersect(ray& v)
 vec4 sphere::get_normal(const vec4& p)
 {
 	return (p - this->c)*(1/this->r);
+}
+
+vec2 sphere::get_uv(const vec4& p)
+{
+	vec4 p_rel = p - c;
+	double pi = 3.1415;
+	double u = acos(p_rel.z/(sqrt(p_rel.x*p_rel.x+p_rel.y*p_rel.y+p_rel.z*p_rel.z)))/(pi);
+	double v = (atan(p_rel.y/p_rel.z)+pi)/(2.0*pi);
+	return vec2(u, v);
+// std::cout << "u: " << u << " v: " << v << std::endl;
 }

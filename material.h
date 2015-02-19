@@ -6,7 +6,7 @@
 
 class material {
 public:
-	material(vec4 c=vec4(0.5,0.5,0.5), vec4 ref_color=vec4(0.5,0.5,0.5), double diff=1.0, 
+	material(vec4 c=vec4(1.0,1.0,1.0), vec4 ref_color=vec4(0.5,0.5,0.5), double diff=1.0, 
 			 double ref=0.0, double spec=32.0, double fract=0.0, double ior=1.0);
 	~material();
 	void add_diffuse_map(pixelmap &p);

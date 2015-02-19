@@ -87,6 +87,7 @@ public:
 	vec4 hit_norm;
 	vec4 hit_color;
 	vec2 hit_uv;
+	int debug;
 };
 
 #endif

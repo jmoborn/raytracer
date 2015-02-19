@@ -96,6 +96,7 @@ vec4 pixelmap::getpixel(double u, double v)
 	double x1 = round(x) - 0.5;
 	double y2 = round(y) + 0.5;;
 	double y1 = round(y) - 0.5;
+
 	vec4 v11 = getpixel_wrap((int)x1,(int)y1);
 	vec4 v12 = getpixel_wrap((int)x1,(int)y2);
 	vec4 v21 = getpixel_wrap((int)x2,(int)y1);

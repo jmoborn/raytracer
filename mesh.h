@@ -13,6 +13,7 @@
 #include "vec4.h"
 #include "material.h"
 #include "object.h"
+#include "bvh.h"
 
 class face {
 public:
@@ -23,8 +24,24 @@ public:
 	std::vector<int> nrms;
 	std::vector<int> txts;
 
+	double xmin;
+	double xmax;
+	double ymin;
+	double ymax;
+	double zmin;
+	double zmax;
+
 private:
 	bool isQuad;
+};
+
+class prim_hit {
+public:
+	prim_hit(){};
+	face* prim;
+	double dist;
+	double u;
+	double v;
 };
 
 class mesh : public object {
@@ -33,12 +50,15 @@ public:
 	mesh(std::string filepath, material m=material());
 	~mesh(){};
 	bool intersect(ray& r);
+	prim_hit intersect_bvh(ray& r, bvh_node<face>* node, int leve);
 	vec4 get_normal(const vec4& p);
 
 	std::vector<vec4> verts;
 	std::vector<vec4> norms;
 	std::vector<face> faces;
 	std::vector<vec2> texts;
+
+	bvh<face> hierarchy;
 
 private:
 	void readobj(std::string& filepath);

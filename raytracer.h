@@ -37,6 +37,8 @@ public:
 
 	int max_depth;
 	int shadow_samples;
+	int reflect_samples;
+	int refract_samples;
 	double ambience;
 	double ray_tolerance;
 	double samples;
