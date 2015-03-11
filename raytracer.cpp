@@ -3,10 +3,10 @@
 raytracer::raytracer()
 {
 	srand(time(NULL));
-	max_depth = 3;
-	shadow_samples = 32;
-	reflect_samples = 32;
-	refract_samples = 32;
+	max_depth = 5;
+	shadow_samples = 1;
+	reflect_samples = 1;
+	refract_samples = 1;
 	samples = 3;
 	ambience = 0.1;
 	ray_tolerance = 0.001;
@@ -124,9 +124,212 @@ vec4 raytracer::shade(ray& v, int depth, int self)
 		if(phong!=0)
 			color  += lights[l]->diffuse() * pow(std::max(0.0, eye.dot(reflect)), phong);
 		color *= shadow_mult;
-		if(depth==0)
-			color += ambience;
+		// if(depth==0)
+		// 	color += ambience;
 	}
+	return color;
+}
+
+vec4 raytracer::trace_path(ray& v, int depth, int self)
+{
+	vec4 color;
+	if(depth>max_depth) return color;
+	int closest_obj = -1;
+	double min_dist = std::numeric_limits<double>::infinity();
+	for(int o=0; o<objs.size(); o++)
+	{
+		if(objs[o]->intersect(v))
+		{
+			if(v.t<min_dist)
+			{
+				min_dist = v.t;
+				closest_obj = o;
+			}
+		}
+	}
+	if(closest_obj!=-1)
+	{
+		v.hit_norm.normalize();
+		color += shade(v, depth, closest_obj);
+
+		vec4 org = v.end();
+		vec4 inc = v.d*(-1);
+		vec4 refl_color, fract_color;
+		double n1, n2;
+		ray r;
+		if(v.refract_obj == closest_obj)
+		{
+			v.hit_norm *= -1;
+			r.refract_obj = -1;
+		}
+
+		double rng = randd();
+		if (rng < objs[closest_obj]->shader.refract)
+		{
+// std::cout << "ERROR" << std::endl;
+			//refraction
+			n1 = (self == -1) ? 1.0 : objs[self]->shader.ior;
+			n2 = (v.refract_obj==closest_obj) ? 1.0 : objs[closest_obj]->shader.ior;
+			double iof = n1/n2;
+			double c1 = -v.hit_norm.dot(v.d);
+			double c2 = sqrt(1-iof*iof*(1-c1*c1));
+			vec4 fract = v.d*iof + v.hit_norm * (iof*c1 - c2);
+			fract.normalize();
+			org += (fract*ray_tolerance);
+			ray f(org, fract);
+			f.refract_obj = (v.refract_obj==closest_obj) ? -1.0 : closest_obj; 
+			color += objs[closest_obj]->refract()*trace_path(f, depth+1, closest_obj);
+		}
+		else if(rng < objs[closest_obj]->shader.refract + objs[closest_obj]->shader.reflect)
+		{
+// std::cout << "ERROR" << std::endl;
+			//reflect
+			vec4 dir = v.hit_norm*(v.hit_norm.dot(inc)*2) - inc;
+			org += (dir*ray_tolerance);
+			vec4 up(0.0,1.0,0.0);
+			vec4 axis_x = dir.cross(up);
+			vec4 axis_y = axis_x.cross(dir);
+			double dist_radius = 0.0;
+			
+			double cur_theta = randd()*2.0*PI;
+			double cur_radius = randd()*dist_radius;
+			double cur_x = cur_radius*cos(cur_theta);
+			double cur_y = cur_radius*sin(cur_theta);
+			dir += (axis_x*cur_x);
+			dir += (axis_y*cur_y);
+			dir.normalize();
+			r.o = org;
+			r.d = dir;
+			color += objs[closest_obj]->reflect()*trace_path(r, depth+1, closest_obj);
+
+			// for(int i=0; i<reflect_samples; i++)
+			// {
+			// 	ray cur_r(r);
+			// 	double cur_theta = randd()*2.0*PI;
+			// 	double cur_radius = randd()*dist_radius;
+			// 	double cur_x = cur_radius*cos(cur_theta);
+			// 	double cur_y = cur_radius*sin(cur_theta);
+			// 	vec4 cur_dir(dir);
+			// 	cur_dir += (axis_x*cur_x);
+			// 	cur_dir += (axis_y*cur_y);
+			// 	cur_dir.normalize();
+			// 	cur_r.o = reflect_org;
+			// 	cur_r.d = cur_dir;
+			// 	total_refl_color += objs[closest_obj]->reflect()*trace_ray(cur_r, depth+1, closest_obj);
+			// }
+			// refl_color = total_refl_color*(1.0/reflect_samples);
+		}
+		else
+		{
+			//diffuse
+			vec4 dir(v.hit_norm);
+			vec4 up(0.0,1.0,0.0);
+			if(dir == up || dir == (up*-1)) up.x = 1.0;
+			vec4 axis_x = dir.cross(up);
+			vec4 axis_z = axis_x.cross(dir);
+			axis_x.normalize();
+			axis_z.normalize();
+
+			double rand1 = randd();
+			double rand2 = randd();
+			double theta = acos(-sqrt(rand1));
+			double phi = 2.0*PI*rand2;
+			// double theta = rand1*PI/4.0;
+			double cur_x = sin(theta)*cos(phi);
+			double cur_z = sin(theta)*sin(phi);
+			double cur_y = cos(theta);
+			vec4 hemi(cur_x, cur_y, cur_z);
+			hemi.normalize();
+			// if(hemi.length()!=1.0) std::cout << "ERROR: not unit hemisphere" << std::endl;
+			vec4 straight(0.0, 1.0, 0.0);
+			double proj = hemi.dot(straight);
+			dir *= proj;
+			dir += (axis_x*hemi.x);
+			dir += (axis_z*hemi.z);
+			dir.normalize();
+			dir *= -1.0;
+// std::cout << "ray: " << dir.x << " " << dir.y << " " << dir.z << std::endl;
+// std::cout << " axis_x: " << axis_x.x << " " << axis_x.y << " " << axis_x.z << std::endl;
+// std::cout << " axis_z: " << axis_z.x << " " << axis_z.y << " " << axis_z.z << std::endl;
+// std::cout << "up: " << up.x << " " << up.y << " " << up.z << std::endl;
+// std::cout << "norm: " << v.hit_norm.x << " " << v.hit_norm.y << " " << v.hit_norm.z << std::endl;
+			org += (dir*ray_tolerance);
+			r.o = org;
+			r.d = dir;
+			color += objs[closest_obj]->diffuse()*trace_path(r, depth+1, closest_obj);//*(pow(0.5, depth));
+		}
+	}
+		//do we have reflection or refraction?
+	// 	if(((objs[closest_obj]->shader.reflect > 0)||(objs[closest_obj]->shader.refract > 0))&&(depth<max_depth))
+	// 	{
+	// 		vec4 org = v.end();
+	// 		vec4 inc = v.d*(-1);
+	// 		vec4 refl_color, fract_color;
+	// 		double n1, n2;
+	// 		ray r;
+	// 		if(v.refract_obj == closest_obj)
+	// 		{
+	// 			v.hit_norm *= -1;
+	// 			r.refract_obj = -1;
+	// 		}
+	// 		//calculate reflection ray
+	// 		if(objs[closest_obj]->shader.reflect > 0)
+	// 		{
+	// 			vec4 dir = v.hit_norm*(v.hit_norm.dot(inc)*2) - inc;
+	// 			vec4 reflect_org = org + (dir*ray_tolerance);
+	// 			vec4 up(0.0,1.0,0.0);
+	// 			vec4 axis_x = dir.cross(up);
+	// 			vec4 axis_y = axis_x.cross(dir);
+	// 			double dist_radius = 0.75;
+	// 			vec4 total_refl_color = vec4(0.0,0.0,0.0);
+	// 			for(int i=0; i<reflect_samples; i++)
+	// 			{
+	// 				ray cur_r(r);
+	// 				double cur_theta = randd()*2.0*PI;
+	// 				double cur_radius = randd()*dist_radius;
+	// 				double cur_x = cur_radius*cos(cur_theta);
+	// 				double cur_y = cur_radius*sin(cur_theta);
+	// 				vec4 cur_dir(dir);
+	// 				cur_dir += (axis_x*cur_x);
+	// 				cur_dir += (axis_y*cur_y);
+	// 				cur_dir.normalize();
+	// 				cur_r.o = reflect_org;
+	// 				cur_r.d = cur_dir;
+	// 				total_refl_color += objs[closest_obj]->reflect()*trace_ray(cur_r, depth+1, closest_obj);
+	// 			}
+	// 			refl_color = total_refl_color*(1.0/reflect_samples);
+	// 		}
+	// 		//calculate refraction ray
+	// 		if(objs[closest_obj]->shader.refract > 0)
+	// 		{
+	// 			n1 = (self == -1) ? 1.0 : objs[self]->shader.ior;
+	// 			n2 = (v.refract_obj==closest_obj) ? 1.0 : objs[closest_obj]->shader.ior;
+	// 			double iof = n1/n2;
+	// 			double c1 = -v.hit_norm.dot(v.d);
+	// 			double c2 = sqrt(1-iof*iof*(1-c1*c1));
+	// 			vec4 fract = v.d*iof + v.hit_norm * (iof*c1 - c2);
+	// 			fract.normalize();
+	// 			vec4 refract_org = org + (fract*ray_tolerance);
+	// 			ray f(refract_org, fract);
+	// 			f.refract_obj = (v.refract_obj==closest_obj) ? -1.0 : closest_obj; 
+	// 			fract_color = objs[closest_obj]->refract()*trace_ray(f, depth+1, closest_obj);
+	// 		}
+	// 		//fresnel effect with schlick's approximation
+	// 		if(objs[closest_obj]->shader.reflect > 0&&objs[closest_obj]->shader.refract > 0)
+	// 		{
+	// 			double R0s = ((n1 - n2)*(n1 - n2))/((n1+n2)*(n1+n2));
+	// 			double R0 = R0s*R0s;
+	// 			double R = R0 + (1-R0)*pow((1-v.hit_norm.dot(inc)), 5.0);
+	// 			refl_color *= R;
+	// 			fract_color *= (1-R);
+	// 		}
+	// 		color += (refl_color + fract_color);
+	// 	}
+	// }
+	// else
+	// {
+	// 	color += vec4(0.2, 0.2, 0.2);
+	// }
 	return color;
 }
 
@@ -242,6 +445,7 @@ double raytracer::trace_shadow(ray& v, int self, int light)
 	this->lights[light]->intersect(vl);
 	int light_dist = vl.t;
 	int hits = 0;
+	int refract_hits = 0;
 	for(int i=0; i<this->shadow_samples; i++)
 	{
 		ray vs = v;
@@ -252,6 +456,7 @@ double raytracer::trace_shadow(ray& v, int self, int light)
 		offset.normalize();
 		offset *= this->lights[light]->r;
 		vec4 new_dir = (this->lights[light]->c + offset) - vs.o;
+		// vec4 new_dir = this->lights[light]->c - vs.o;;
 		new_dir.normalize();
 		vs.d = new_dir;
 		for(int o=0; o<objs.size(); o++)
@@ -261,11 +466,18 @@ double raytracer::trace_shadow(ray& v, int self, int light)
 			{
 				// std::cout << o << std::endl;
 				hits++;
+				// if(objs[0]->shader.refract>0) refract_hits++;
 				break;
 			}
 		}
 	}
+	// double denom = this->shadow_samples;
+	// if (refract_hits)
+	// {
+	// 	denom *= 2;
+	// }
 	return ((double)(this->shadow_samples - hits))/((double)this->shadow_samples);
+	// return (denom - hits)/denom;
 }
 
 const double raytracer::PI;
@@ -276,14 +488,14 @@ int main()
 
 	//TODO: read this info from the scene file
 	//define camera properties
-	int image_width = 256;
-	int image_height = 256;
+	int image_width = 512;
+	int image_height = 512;
 	vec4 look_from(0,0,1);
 	double fov = 40.0;//degrees
 	fov *= (r.PI/180.0);//radians
 	pixelmap pic(image_width, image_height);
 	double aspect_ratio = (double)image_height/(double)image_width;
-	double samples = 4;
+	double samples = 16;
 	int samples1D = sqrt(samples);
 
 	//calculate image plane size in world space
@@ -331,7 +543,7 @@ v.debug = 0;
 // 	v.debug = 0;
 // }
 // std::cout << "before trace" << std::endl;
-					color += r.trace_ray(v, 0, -1);
+					color += r.trace_path(v, 0, -1);
 // std::cout << "after trace" << std::endl;
 				}
 			}

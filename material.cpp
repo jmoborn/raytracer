@@ -10,6 +10,14 @@ material::material(vec4 c, vec4 ref_color, double diff, double ref, double spec,
 	this->refract = fract;
 	this->ior = ior;
 	this->has_diff_map = false;
+
+	double energy = diffuse+reflect+refract;
+	if(energy!=1.0)
+	{
+		diffuse /= energy;
+		reflect /= energy;
+		refract /= energy;
+	}
 }
 
 material::~material(){}

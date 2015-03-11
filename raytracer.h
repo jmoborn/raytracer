@@ -26,6 +26,7 @@ public:
 
 	vec4 shade(ray& v, int depth, int self=-1);
 	vec4 trace_ray(ray& v, int depth, int self);
+	vec4 trace_path(ray& v, int depth, int self);
 	double trace_shadow(ray& v, int self, int light);
 	void load_scene(std::string& scenefile);
 	double randd();
