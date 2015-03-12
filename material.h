@@ -20,6 +20,7 @@ public:
 	double specular;
 	double refract;
 	double ior;
+	double emit;
 
 };
 
