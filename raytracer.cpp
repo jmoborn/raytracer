@@ -108,61 +108,56 @@ vec4 raytracer::read_vector(std::stringstream& ss)
 
 vec4 raytracer::shade(ray& v, int depth, int self)
 {
-	// vec4 color;
-	// for(int l=0; l<lights.size(); l++)
-	// {
-	// 	vec4 pt = v.end();
-	// 	vec4 sw = lights[l]->c - pt;
-	// 	double light_dist = sw.length();
-	// 	vec4 up_y(0,1,0);
-	// 	vec4 up_x(1,0,0);
-	// 	vec4 su = (fabs(sw.x)>0.1?up_y:up_x).cross(sw);
-	// 	su.normalize();
-	// 	vec4 sv = sw.cross(su);
-	// 	vec4 l_dist = pt - lights[l]->c;
-	// 	double cos_a_max = sqrt(1-lights[l]->r*lights[l]->r/(pt - lights[l]->c).dot(l_dist));
-	// 	double eps1 = randd();
-	// 	double eps2 = randd();
-	// 	double cos_a = 1-eps1+eps1*cos_a_max;
-	// 	double sin_a = sqrt(1-cos_a*cos_a);
-	// 	double phi = 2*PI*eps2;
-	// 	vec4 l_dir = su*cos(phi)*sin_a + sv*sin(phi)*sin_a + sw*cos_a;
-	// 	l_dir.normalize();
-
-	// 	vec4 l_org(pt);
-	// 	l_org += (l_dir*ray_tolerance);
-	// 	ray vs(l_org, l_dir);
-	// 	int hits = 0;
-	// 	for(int o=0; o<objs.size(); o++)
-	// 	{
-	// 		bool hit_o = objs[o]->intersect(vs);
-	// 		if(hit_o&&vs.t<light_dist)
-	// 		{
-	// 			// std::cout << o << std::endl;
-	// 			hits++;
-	// 			break;
-	// 		}
-	// 	}
-	// 	if(!hits)
-	// 	{
-	// 		//std::cout << "hit light" << std::endl;
-	// 		double omega = 2*PI*(1-cos_a_max);
-	// 		color = v.hit_color*(lights[l]->diffuse()*v.hit_norm.dot(l_dir)*omega)*(1.0/PI);
-	// 	}
-		
-	// }
-	// return color;
-
-
 	vec4 color;
 	for(int l=0; l<lights.size(); l++)
 	{
 		vec4 pt = v.end();
+		vec4 sw = lights[l]->c - pt;
+		vec4 up_y(0,1,0);
+		vec4 up_x(1,0,0);
+		vec4 su = (fabs(sw.x)>0.1?up_y:up_x).cross(sw);
+		su.normalize();
+		vec4 sv = sw.cross(su);
+		vec4 l_dist = pt - lights[l]->c;
+		double cos_a_max = sqrt(1-lights[l]->r*lights[l]->r/(l_dist).dot(l_dist));
+		double eps1 = randd();
+		double eps2 = randd();
+		double cos_a = 1-eps1+eps1*cos_a_max;
+		double sin_a = sqrt(1-cos_a*cos_a);
+		double phi = 2*PI*eps2;
+		vec4 l_dir = su*cos(phi)*sin_a + sv*sin(phi)*sin_a + sw*cos_a;
+		l_dir.normalize();
+
+		vec4 l_org(pt);
+		l_org += (l_dir*ray_tolerance);
+		ray vs(l_org, l_dir);
+		int hits = 0;
+
+		this->lights[l]->intersect(vs);
+		double light_dist = vs.t;
+		for(int o=0; o<objs.size(); o++)
+		{
+			bool hit_o = objs[o]->intersect(vs);
+			if(hit_o&&vs.t<light_dist)
+			{
+				hits++;
+				break;
+			}
+		}
+		double shadow_mult = 0.0;
+		if(!hits)
+		{
+			//std::cout << "hit light" << std::endl;
+			double omega = 2*PI*(1-cos_a_max);
+			shadow_mult = omega;//*(1.0/PI);
+			// shadow_mult = 1.0;
+		}
+		
 		vec4 light = lights[l]->c - pt;
 		light.normalize();
 		// pt += (light*ray_tolerance);
 		ray s(pt, light);
-		double shadow_mult = trace_shadow(s, self, l);
+		// double shadow_mult = trace_shadow(s, self, l);
 		double n_dot_l = v.hit_norm.dot(light);
 		vec4 reflect = v.hit_norm*(2*n_dot_l) - light;
 		vec4 eye = v.d*(-1);
@@ -172,10 +167,33 @@ vec4 raytracer::shade(ray& v, int depth, int self)
 		if(phong!=0)
 			color  += lights[l]->diffuse() * pow(std::max(0.0, eye.dot(reflect)), phong);
 		color *= shadow_mult;
-		// if(depth==0)
-		// 	color += ambience;
+
 	}
 	return color;
+
+
+	// vec4 color;
+	// for(int l=0; l<lights.size(); l++)
+	// {
+	// 	vec4 pt = v.end();
+	// 	vec4 light = lights[l]->c - pt;
+	// 	light.normalize();
+	// 	// pt += (light*ray_tolerance);
+	// 	ray s(pt, light);
+	// 	double shadow_mult = trace_shadow(s, self, l);
+	// 	double n_dot_l = v.hit_norm.dot(light);
+	// 	vec4 reflect = v.hit_norm*(2*n_dot_l) - light;
+	// 	vec4 eye = v.d*(-1);
+	// 	reflect.normalize();
+	// 	color += v.hit_color*ambience + v.hit_color * lights[l]->diffuse() * std::max(0.0, n_dot_l);
+	// 	double phong = objs[self]->shader.specular;
+	// 	if(phong!=0)
+	// 		color  += lights[l]->diffuse() * pow(std::max(0.0, eye.dot(reflect)), phong);
+	// 	color *= shadow_mult;
+	// 	// if(depth==0)
+	// 	// 	color += ambience;
+	// }
+	// return color;
 }
 
 vec4 raytracer::trace_path(ray& v, int depth, int self)
@@ -486,8 +504,9 @@ int main()
 	fov *= (r.PI/180.0);//radians
 	pixelmap pic(image_width, image_height);
 	double aspect_ratio = (double)image_height/(double)image_width;
-	double samples = 16;
-	int samples1D = sqrt(samples);
+	int samples1D = 40;
+	double samples = samples1D*samples1D;
+	// int samples1D = sqrt(samples);
 
 	//calculate image plane size in world space
 	double scene_width = tan(fov/2)*2;
@@ -538,7 +557,8 @@ v.debug = 0;
 // std::cout << "after trace" << std::endl;
 				}
 			}
-			color *= 1/samples;
+			//TODO: change back to 1!!!
+			color *= 8/samples;
 			color.clamp(1.0);
 			
 			pic.setpixel(i, j, color);
