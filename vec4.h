@@ -88,6 +88,7 @@ public:
 	vec4 hit_color;
 	vec2 hit_uv;
 	int debug;
+	int refract_bounces;
 };
 
 #endif

@@ -21,6 +21,7 @@ public:
 	double refract;
 	double ior;
 	double emit;
+	double energy;
 
 };
 

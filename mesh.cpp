@@ -309,7 +309,7 @@ void mesh::readobj(std::string& filepath)
 	//set bbox for each polygon
 	for(int i=0; i<faces.size(); i++)
 	{
-		std::cout << "setting bbox for face " << i << std::endl;
+		// std::cout << "setting bbox for face " << i << std::endl;
 		faces[i].xmin = faces[i].ymin = faces[i].zmin = std::numeric_limits<double>::infinity();
 		faces[i].xmax = faces[i].ymax = faces[i].zmax = -std::numeric_limits<double>::infinity();
 		double epsilon = 0.0001;

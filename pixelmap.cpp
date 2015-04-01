@@ -66,7 +66,11 @@ pixelmap::~pixelmap()
 
 void pixelmap::setpixel(int x, int y, vec4 c)
 {
-	this->pixels[x][y] = c;
+	this->pixels[x][y].x = c.x;
+	this->pixels[x][y].y = c.y;
+	this->pixels[x][y].z = c.z;
+	// std::cout << "setting pixel: " << x << " " << y << std::endl;
+	// std::cout << this->pixels[x][y].x << " " << this->pixels[x][y].y << " " << this->pixels[x][y].z << std::endl;
 }
 
 vec4 pixelmap::getpixel(int x, int y)
@@ -90,6 +94,8 @@ vec4 pixelmap::getpixel(double u, double v)
 	// int j = (v*(double)height);
 	// return this->pixels[i%width][j%height];
 
+	u = mod(u);
+	v = mod(v);
 	double x = u*this->width;
 	double y = v*this->height;
 	double x2 = round(x) + 0.5;
@@ -121,6 +127,13 @@ vec4 pixelmap::bilerp(double x, double y, double x1, double y1, double x2, doubl
 	return wy;
 }
 
+double pixelmap::mod(double u)
+{
+	double u_floor = floor(u);
+	return u - u_floor;
+	
+}
+
 void pixelmap::writeppm(std::string filename)
 {
 	std::ofstream file;
@@ -130,6 +143,11 @@ void pixelmap::writeppm(std::string filename)
   	{
   		for(int j=0; j<width; j++)
   		{
+// if(j==1100&&i==600)
+// {
+// std::cout << "writing pixel: " << j << " " << i << std::endl;
+// std::cout << this->pixels[j][i].x << " " << this->pixels[j][i].y << " " << this->pixels[j][i].z << std::endl;
+// }
   			file << round(pixels[j][i].x*255) << " " 
   				 << round(pixels[j][i].y*255) << " " 
   				 << round(pixels[j][i].z*255) << "  ";

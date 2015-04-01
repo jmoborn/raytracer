@@ -12,13 +12,13 @@ material::material(vec4 c, vec4 ref_color, double diff, double ref, double spec,
 	this->has_diff_map = false;
 	this->emit = 0.0;
 
-	double energy = diffuse+reflect+refract;
-	if(energy!=1.0)
-	{
-		diffuse /= energy;
-		reflect /= energy;
-		refract /= energy;
-	}
+	this->energy = diffuse+reflect+refract;
+	// if(energy!=1.0)
+	// {
+	// 	diffuse /= energy;
+	// 	reflect /= energy;
+	// 	refract /= energy;
+	// }
 }
 
 material::~material(){}

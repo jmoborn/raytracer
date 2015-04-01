@@ -220,6 +220,8 @@ ray::ray(vec4 origin, vec4 direction)
 	this->d = direction;
 	this->t = std::numeric_limits<double>::infinity();
 	this->refract_obj = -1;
+	this->refract_bounces = 0;
+	this->debug = 0;
 }
 
 vec4 ray::end()
