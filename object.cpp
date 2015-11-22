@@ -6,11 +6,11 @@ vec4 object::diffuse(vec2 uv)
 	{
 		// std::cout << uv.u << ", " << uv.v << std::endl;
 		vec4 map_color = shader.get_map_color(uv);
-		return map_color*shader.diffuse_color*shader.diffuse;
+		return map_color*shader.diffuse_color*shader.diffuse + map_color*shader.emit_color*shader.emit;
 	}
 	else
 	{
-		return shader.diffuse_color*shader.diffuse;
+		return shader.diffuse_color*shader.diffuse + shader.emit_color*shader.emit;
 	}
 }
 

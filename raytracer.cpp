@@ -1,6 +1,13 @@
 #include "raytracer.h"
 
-raytracer::raytracer()
+double when()
+{
+    struct timeval tp;
+    gettimeofday(&tp, NULL);
+    return ((double) tp.tv_sec + (double) tp.tv_usec * 1e-6);
+}
+
+raytracer::raytracer(std::string scenefile)
 {
 	srand(time(NULL));
 	max_depth = 5;
@@ -10,7 +17,7 @@ raytracer::raytracer()
 	samples = 3;
 	ambience = 0.5;
 	ray_tolerance = 0.001;
-	std::string scenefile = "clock.scene";
+	
 	load_scene(scenefile);
 }
 
@@ -37,15 +44,27 @@ void raytracer::load_scene(std::string& scenefile)
 		{
 			continue;
 		}
+		if(tok=="c")
+		{
+			std::cout << "creating camera" << std::endl;
+			std::string width_str, height_str, fov_str, samples_str;
+			ss >> width_str >> height_str >> fov_str >> samples_str;
+			this->image_width = atoi(width_str.c_str());
+			this->image_height = atoi(height_str.c_str());
+			this->samples1D = atoi(fov_str.c_str());
+			this->fov = atof(samples_str.c_str());
+		}
 		if(tok=="m")
 		{
 			std::cout << "creating material" << std::endl;
 			vec4 diff = read_vector(ss);
 			vec4 refl = read_vector(ss);
-			std::string sdiff, sref, sspec, sfract, sior;
-			ss >> sdiff >> sref >> sspec >> sfract >> sior;
-			material *mat = new material(diff, refl, atof(sdiff.c_str()), atof(sref.c_str()), 
-									   atof(sspec.c_str()), atof(sfract.c_str()), atof(sior.c_str()));
+			vec4 refr = read_vector(ss);
+			vec4 emit = read_vector(ss);
+			std::string sdiff, srefl, srefr, semit, sior;
+			ss >> sdiff >> srefl >> srefr >> semit >> sior;
+			material *mat = new material(diff, refl, refr, emit, atof(sdiff.c_str()), atof(srefl.c_str()), 
+									   atof(srefr.c_str()), atof(semit.c_str()), atof(sior.c_str()));
 			char peek = ss.peek();
 			while(peek==' ')
 			{
@@ -59,19 +78,6 @@ void raytracer::load_scene(std::string& scenefile)
 				pixelmap p(map);
 				mat->add_diffuse_map(p);
 			}
-			peek = ss.peek();
-			while(peek==' ')
-			{
-				ss.get();
-				peek = ss.peek();
-			}
-			if(ss.peek()!='\n')
-			{
-				std::string emit_str;
-				ss >> emit_str;
-				double emit = atof(emit_str.c_str());
-				mat->emit = emit;
-			}
 
 			this->mtls.push_back(mat);
 		}
@@ -81,6 +87,11 @@ void raytracer::load_scene(std::string& scenefile)
 			ss >> objfile >> smtl;
 			mesh *m = new mesh(objfile, *this->mtls[atoi(smtl.c_str())]);
 			this->objs.push_back(m);
+			// TODO: support for mesh lights
+			// if(m->shader.emit>0.0)
+			// {
+			// 	this->lights.push_back(m);
+			// }
 		}
 		if(tok=="s")
 		{
@@ -94,8 +105,13 @@ void raytracer::load_scene(std::string& scenefile)
 			vec4 tcol = s->diffuse();
 			std::cout << "diffuse " << tcol.x << " " << tcol.y << " " << tcol.z << std::endl;
 			this->objs.push_back(s);
+			//check for emission
+			if(s->shader.emit>0.0)
+			{
+				this->lights.push_back(s);
+			}
 		}
-		if(tok=="l")
+		if(tok=="l")/*deprecated*/
 		{
 			std::cout << "creating light" << std::endl;
 			std::string sradius;
@@ -180,7 +196,7 @@ vec4 raytracer::shade(ray& v, int depth, int self)
 		reflect.normalize();
 		// color += v.hit_color*ambience + v.hit_color * lights[l]->diffuse() * std::max(0.0, n_dot_l);
 		color += v.hit_color * lights[l]->diffuse() * std::max(0.0, n_dot_l);
-		double phong = objs[self]->shader.specular;
+		// double phong = objs[self]->shader.specular;
 		// if(phong!=0)
 		// 	color  += lights[l]->diffuse() * pow(std::max(0.0, eye.dot(reflect)), phong);
 		color *= shadow_mult;
@@ -569,58 +585,65 @@ double raytracer::trace_shadow(ray& v, int self, int light)
 
 const double raytracer::PI;
 
-int main()
+// g++ *.cpp -O3 -fopenmp -o raytracer
+int main(int argc, char *argv[])
 {
-	raytracer r;
+	std::string scenefile;// = "test.scene";
+	if(argc < 2)
+	{
+		std::cout << "No scene file parameter: Loading default scene." << std::endl;
+		scenefile = "test.scene";
+	}
+	else
+	{
+		scenefile = argv[1];
+	}
+	raytracer r(scenefile);
 
-	//TODO: read this info from the scene file
 	//define camera properties
-	int image_width = 1168;
-	int image_height = 657;
-	// int image_width = 880;
-	// int image_height = 660;
-	// int image_width = 640;
-	// int image_height = 360;
-	// int image_width = 512;
-	// int image_height = 512;
+	// int image_width = 1168;
+	// int image_height = 657;
 	vec4 look_from(0,0,1);
-	double fov = 54.0;//degrees
-	// double fov = 40.0;//degrees
-	fov *= (r.PI/180.0);//radians
-	pixelmap pic(image_width, image_height);
-	double aspect_ratio = (double)image_height/(double)image_width;
-	int samples1D = 70;
-	double samples = samples1D*samples1D;
-	// int samples1D = sqrt(samples);
+	double fov = r.fov * (r.PI/180.0);//radians
+
+	pixelmap pic(r.image_width, r.image_height);
+	double aspect_ratio = (double)r.image_height/(double)r.image_width;
+	double samples = r.samples1D*r.samples1D;
+
+	std::cout << "resolution: " << r.image_width << " x " << r.image_height << std::endl;
+	std::cout << "samples1D: " << r.samples1D << std::endl;
+	std::cout << "fov: " << r.fov << std::endl;
+	std::cout << "fov (radians): " << fov << std::endl;
 
 	//calculate image plane size in world space
 	double scene_width = tan(fov/2)*2;
 	double scene_height = tan((fov*aspect_ratio)/2)*2;
-	double pixel_width = scene_width/image_width;
-	double pixel_slice = pixel_width/samples1D;
+	double pixel_width = scene_width/r.image_width;
+	double pixel_slice = pixel_width/r.samples1D;
 
 	//start timer
-	clock_t start = clock();
+	double start = when();
 
-	int total_pixels = image_width*image_height;
+	int total_pixels = r.image_width*r.image_height;
 	double last_report = 0;
 
 	//for each pixel
-	for(int i=0; i<image_width; i++)
+	#pragma omp parallel for schedule(dynamic, 4)
+	for(int i=0; i<r.image_width; i++)
 	// for(int i=image_width-1; i>=0; i--)
 	{
-		for(int j=0; j<image_height; j++)
+		for(int j=0; j<r.image_height; j++)
 		{
-			int ii = i - image_width/2;
-			int jj = j - image_height/2;
+			int ii = i - r.image_width/2;
+			int jj = j - r.image_height/2;
 			double x = ii*pixel_width + pixel_slice/2;
 			double y = jj*pixel_width + pixel_slice/2;
 			
 			vec4 color(0,0,0);
 			//for each sample
-			for(int m=0; m<samples1D; m++)
+			for(int m=0; m<r.samples1D; m++)
 			{
-				for(int n=0; n<samples1D; n++)
+				for(int n=0; n<r.samples1D; n++)
 				{
 					double xoff = r.randd_negative()*pixel_slice;
 					double yoff = r.randd_negative()*pixel_slice;
@@ -671,7 +694,8 @@ v.debug = 0;
 	}
 	pic.writeppm("clock.ppm");
 
-	clock_t time_gone_by = clock() - start;
-	std::cout << "TOTAL TIME: " << (double)time_gone_by / ((double)CLOCKS_PER_SEC) << " seconds" << std::endl;
+	// clock_t time_gone_by = clock() - start;
+	double time_gone_by = when() - start;
+	std::cout << "TOTAL TIME: " << time_gone_by << " seconds" << std::endl;
 	
 }

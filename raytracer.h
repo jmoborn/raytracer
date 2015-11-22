@@ -10,7 +10,8 @@
 #include <math.h>
 #include <algorithm>
 #include <limits>
-#include <time.h>
+#include <sys/time.h>
+#include <omp.h>
 
 #include "mat4.h"
 #include "vec4.h"
@@ -21,7 +22,7 @@
 
 class raytracer {
 public:
-	raytracer();
+	raytracer(std::string scenefile);
 	~raytracer();
 
 	vec4 shade(ray& v, int depth, int self=-1);
@@ -35,6 +36,11 @@ public:
 	std::vector<material*> mtls;
 	std::vector<object*> objs;
 	std::vector<sphere*> lights;
+
+	int image_width;
+	int image_height;
+	int samples1D;
+	double fov;	
 
 	int max_depth;
 	int shadow_samples;
