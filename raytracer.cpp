@@ -588,11 +588,12 @@ const double raytracer::PI;
 // g++ *.cpp -O3 -fopenmp -o raytracer
 int main(int argc, char *argv[])
 {
-	std::string scenefile;// = "test.scene";
+	std::string scenefile;
+	std::string outfile = "test.ppm";
 	if(argc < 2)
 	{
 		std::cout << "No scene file parameter: Loading default scene." << std::endl;
-		scenefile = "test.scene";
+		scenefile = "scenes/test.scene";
 	}
 	else
 	{
@@ -687,12 +688,12 @@ v.debug = 0;
 			{
 				last_report = decimal;
 				std::cout << (int)(decimal*100.0) << "\%" << std::endl;
-				pic.writeppm("clock.ppm");
+				pic.writeppm(outfile);
 			}
 			
 		}
 	}
-	pic.writeppm("clock.ppm");
+	pic.writeppm(outfile);
 
 	// clock_t time_gone_by = clock() - start;
 	double time_gone_by = when() - start;
