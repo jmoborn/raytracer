@@ -1,10 +1,11 @@
 #include "sphere.h"
 
-sphere::sphere(double radius, vec4 center, material m)
+sphere::sphere(double radius, vec4 center, int material_index)
 {
 	this->r = radius;
 	this->c = center;
-	this->shader = m;
+	// this->shader = m;
+	this->mtl_idx = material_index;
 }
 
 /*
@@ -34,7 +35,8 @@ bool sphere::intersect(ray& v)
 			vec4 end = v.end();
 			v.hit_norm = get_normal(end);
 			v.hit_uv = get_uv(end);
-			v.hit_color = diffuse(v.hit_uv);
+			v.hit_mtl = mtl_idx;
+			// v.hit_color = diffuse(v.hit_uv);
 		}
 		return true;
 	}
@@ -54,7 +56,8 @@ bool sphere::intersect(ray& v)
 				vec4 end = v.end();
 				v.hit_norm = get_normal(end);
 				v.hit_uv = get_uv(end);
-				v.hit_color = diffuse(v.hit_uv);
+				v.hit_mtl = mtl_idx;
+				// v.hit_color = diffuse(v.hit_uv);
 			}
 			return true;
 		}
@@ -67,7 +70,8 @@ bool sphere::intersect(ray& v)
 			vec4 end = v.end();
 			v.hit_norm = get_normal(end);
 			v.hit_uv = get_uv(end);
-			v.hit_color = diffuse(v.hit_uv);
+			v.hit_mtl = mtl_idx;
+			// v.hit_color = diffuse(v.hit_uv);
 		}
 		return true;
 	}

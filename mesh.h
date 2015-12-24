@@ -47,10 +47,10 @@ public:
 class mesh : public object {
 public:
 	mesh();
-	mesh(std::string filepath, material m=material());
+	mesh(std::string filepath, int material_index);
 	~mesh(){};
 	bool intersect(ray& r);
-	prim_hit intersect_bvh(ray& r, bvh_node<face>* node, int leve);
+	prim_hit intersect_bvh(ray& r, bvh_node<face>* node, int level);
 	vec4 get_normal(const vec4& p);
 
 	std::vector<vec4> verts;

@@ -12,7 +12,7 @@
 
 class sphere : public object{
 public:
-	sphere(double radius, vec4 center, material m=material());
+	sphere(double radius, vec4 center, int material_index);
 	~sphere(){};
 	bool intersect(ray& r);
 	vec4 get_normal(const vec4& p);

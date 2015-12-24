@@ -165,7 +165,15 @@ vec4 operator-(const vec4& v, double c)
 {
 	return vec4(v.x-c, v.y-c, v.z-c);
 }
+vec4 operator-(double c, const vec4& v)
+{
+	return vec4(v.x-c, v.y-c, v.z-c);
+}
 vec4 operator+(const vec4& v, double c)
+{
+	return vec4(v.x+c, v.y+c, v.z+c);
+}
+vec4 operator+(double c, const vec4& v)
 {
 	return vec4(v.x+c, v.y+c, v.z+c);
 }
@@ -178,6 +186,10 @@ vec4 operator*(const mat4& m, const vec4& v)
 	return vec4(mvx, mvy, mvz, mvw);
 }
 vec4 operator*(const vec4& v, const double c)
+{
+	return vec4(v.x*c, v.y*c, v.z*c);
+}
+vec4 operator*(const double c, const vec4& v)
 {
 	return vec4(v.x*c, v.y*c, v.z*c);
 }
@@ -219,7 +231,7 @@ ray::ray(vec4 origin, vec4 direction)
 	this->o = origin;
 	this->d = direction;
 	this->t = std::numeric_limits<double>::infinity();
-	this->refract_obj = -1;
+	this->hit_ior = 1;
 	this->refract_bounces = 0;
 	this->debug = 0;
 }

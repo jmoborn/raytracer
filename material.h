@@ -14,6 +14,10 @@ public:
 	~material();
 	void add_diffuse_map(pixelmap &p);
 	vec4 get_map_color(vec2 uv);
+	vec4 get_diffuse_color(vec2 uv=vec2(0,0));
+	vec4 get_reflect_color();
+	vec4 get_refract_color();
+	double get_dispersion_ior(vec4 color);
 	vec4 diffuse_color;
 	vec4 reflect_color;
 	vec4 refract_color;

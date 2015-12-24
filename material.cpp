@@ -29,6 +29,30 @@ material::material(vec4 diff_c, vec4 refl_c, vec4 refr_c, vec4 emit_c, double di
 
 material::~material(){}
 
+vec4 material::get_diffuse_color(vec2 uv)
+{
+	if(has_diff_map)
+	{
+		// std::cout << uv.u << ", " << uv.v << std::endl;
+		vec4 map_color = get_map_color(uv);
+		return map_color*diffuse_color*diffuse + map_color*emit_color*emit;
+	}
+	else
+	{
+		return diffuse_color*diffuse + emit_color*emit;
+	}
+}
+
+vec4 material::get_reflect_color()
+{
+	return reflect_color*reflect;
+}
+
+vec4 material::get_refract_color()
+{
+	return diffuse_color*refract;
+}
+
 void material::add_diffuse_map(pixelmap &p)
 {
 	this->has_diff_map = true;
@@ -38,4 +62,10 @@ void material::add_diffuse_map(pixelmap &p)
 vec4 material::get_map_color(vec2 uv)
 {
 	return this->diff_map.getpixel(uv.u, uv.v);
+}
+
+double material::get_dispersion_ior(vec4 color)
+{
+	double wavelength = 0.002*(color.x - color.z);
+	return (double)ior + wavelength;
 }

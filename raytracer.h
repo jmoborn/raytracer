@@ -11,7 +11,10 @@
 #include <algorithm>
 #include <limits>
 #include <sys/time.h>
+
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 
 #include "mat4.h"
 #include "vec4.h"
@@ -25,6 +28,7 @@ public:
 	raytracer(std::string scenefile);
 	~raytracer();
 
+	int intersect_scene(ray &v);
 	vec4 shade(ray& v, int depth, int self=-1);
 	vec4 trace_ray(ray& v, int depth, int self);
 	vec4 trace_path(ray& v, int depth, int self);
@@ -32,6 +36,8 @@ public:
 	void load_scene(std::string& scenefile);
 	double randd();
 	double randd_negative();
+	int randi(int lo, int hi);
+	void init_rand(int);
 
 	std::vector<material*> mtls;
 	std::vector<object*> objs;
@@ -49,9 +55,8 @@ public:
 	double ambience;
 	double ray_tolerance;
 	double samples;
+	unsigned int *rand_seed;
 
-	//constants
-	static const double PI = 3.141592653589;
 
 private:
 	vec4 read_vector(std::stringstream& ss);

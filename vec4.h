@@ -52,9 +52,12 @@ public:
 	friend vec4 operator-(const vec4& v1, const vec4& v2);
 	friend vec4 operator+(const vec4& v1, const vec4& v2);
 	friend vec4 operator-(const vec4& v, const double c);
+	friend vec4 operator-(const double c, const vec4& v);
 	friend vec4 operator+(const vec4& v, const double c);
+	friend vec4 operator+(const double c, const vec4& v);
 	friend vec4 operator*(const mat4& m, const vec4& v);
 	friend vec4 operator*(const vec4& v, const double c);
+	friend vec4 operator*(const double c, const vec4& v);
 	friend vec4 operator*(const vec4& v1, const vec4& v2);
 };
 
@@ -87,6 +90,8 @@ public:
 	vec4 hit_norm;
 	vec4 hit_color;
 	vec2 hit_uv;
+	int hit_mtl;
+	double hit_ior;
 	int debug;
 	int refract_bounces;
 };

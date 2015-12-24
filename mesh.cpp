@@ -23,12 +23,13 @@ face::face(std::vector<int> pts, std::vector<int> txs, std::vector<int> nms)
 
 mesh::mesh(){}
 
-mesh::mesh(std::string filepath, material m)
+mesh::mesh(std::string filepath, int material_index)
 {
 	xmin = ymin = zmin = std::numeric_limits<double>::infinity();
 	xmax = ymax = zmax = -std::numeric_limits<double>::infinity();
 	readobj(filepath);
-	this->shader = m;
+	// this->shader = m;
+	this->mtl_idx = material_index;
 	std::vector<face*> prims;
 	for(int i=0; i<faces.size(); i++)
 	{
@@ -51,7 +52,8 @@ bool mesh::intersect(ray& r)
 		r.t = face_hit.dist;
 		r.hit_norm = N;
 		r.hit_uv = U;
-		r.hit_color = diffuse(U);
+		r.hit_mtl = mtl_idx;
+		// r.hit_color = diffuse(U);
 		// closest_face = i;
 		return true;
 	}
