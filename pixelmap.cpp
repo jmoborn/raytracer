@@ -174,17 +174,13 @@ char pixelmap::skipcomment(std::ifstream &file)
 void pixelmap::readppm(std::string filename)
 {
 	std::ifstream file(filename.c_str());
-    //TODO: comments
     std::string filetype;
     file >> filetype;
-    std::cout << "filetype: " << filetype << std::endl;
     if(filetype!="P3") return; //wrong file type
     char next = skipcomment(file);
     file >> this->width;
-    std::cout << "width: " << width << std::endl;
     next = skipcomment(file);
     file >> this->height;
-    std::cout << "height: " << height << std::endl;
     next = skipcomment(file);
     double max;
     file >> max;

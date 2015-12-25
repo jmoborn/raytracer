@@ -25,6 +25,7 @@ public:
 	double length() const;
 	double dot(vec4& v);
 	vec4 cross(vec4& v);
+	vec4 reflect(vec4& normal);
 	void normalize();
 	void clamp(double limit);
 
@@ -91,7 +92,7 @@ public:
 	vec4 hit_color;
 	vec2 hit_uv;
 	int hit_mtl;
-	double hit_ior;
+	double prior_ior;
 	int debug;
 	int refract_bounces;
 };

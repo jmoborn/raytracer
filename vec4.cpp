@@ -52,6 +52,11 @@ vec4 vec4::cross(vec4& v)
 	return vec4(xx, xy, xz);
 }
 
+vec4 vec4::reflect(vec4& normal)
+{
+	return normal*(dot(normal)*2) - *this;
+}
+
 void vec4::normalize()
 {
 	double l_inv = 1/length();
@@ -231,7 +236,7 @@ ray::ray(vec4 origin, vec4 direction)
 	this->o = origin;
 	this->d = direction;
 	this->t = std::numeric_limits<double>::infinity();
-	this->hit_ior = 1;
+	this->prior_ior = 1;
 	this->refract_bounces = 0;
 	this->debug = 0;
 }

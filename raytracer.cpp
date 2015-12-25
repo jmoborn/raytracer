@@ -53,6 +53,8 @@ void raytracer::load_scene(std::string& scenefile)
 			this->image_height = atoi(height_str.c_str());
 			this->samples1D = atoi(fov_str.c_str());
 			this->fov = atof(samples_str.c_str());
+			std::cout << "  resolution: " << image_width << " x " << image_height << std::endl;
+			std::cout << "  samples: " << samples1D << " x " << samples1D << std::endl;
 		}
 		if(tok=="m")
 		{
@@ -83,10 +85,11 @@ void raytracer::load_scene(std::string& scenefile)
 		}
 		if(tok=="o")
 		{
+			std::cout << "creating mesh" << std::endl;
 			std::string objfile, smtl;
 			ss >> objfile >> smtl;
-			// mesh *m = new mesh(objfile, *this->mtls[atoi(smtl.c_str())]);
 			mesh *m = new mesh(objfile, atoi(smtl.c_str()));
+			std::cout << "  verts: " << m->verts.size() << std::endl;
 			this->objs.push_back(m);
 			// TODO: support for mesh lights
 			// if(m->shader.emit>0.0)
@@ -100,22 +103,16 @@ void raytracer::load_scene(std::string& scenefile)
 			std::string sradius, smtl;
 			ss >> sradius >> smtl;
 			vec4 s_pos = read_vector(ss);
-			// sphere *s = new sphere(atof(sradius.c_str()), s_pos, *this->mtls[atoi(smtl.c_str())]);
 			sphere *s = new sphere(atof(sradius.c_str()), s_pos, atoi(smtl.c_str()));
-			std::cout << "radius " << s->r << std::endl;
-			std::cout << "position " << s->c.x << " " << s->c.y << " " << s->c.z << std::endl;
-			// vec4 tcol = s->diffuse();
-			// std::cout << "diffuse " << tcol.x << " " << tcol.y << " " << tcol.z << std::endl;
+			std::cout << "  radius " << s->r << std::endl;
+			std::cout << "  position " << s->c.x << " " << s->c.y << " " << s->c.z << std::endl;
 			this->objs.push_back(s);
 			//check for emission
-			if(mtls[s->mtl_idx]->emit>0.0)
+			if(mtls[s->mtl_idx]->get_emit()>0.0)
 			{
+				std::cout << "  is light" << std::endl;
 				this->lights.push_back(s);
 			}
-			// if(s->shader.emit>0.0)
-			// {
-			// 	this->lights.push_back(s);
-			// }
 		}
 		if(tok=="l")/*deprecated*/
 		{
@@ -135,15 +132,6 @@ void raytracer::load_scene(std::string& scenefile)
 			// this->objs.push_back(l);
 		}
 	}
-
-	// for(int i=0; i<objs.size(); i++)
-	// {
-	// 	//check for emission
-	// 	if(this->mtls[this->objs[i]->mtl_idx]->emit>0.0)
-	// 	{
-	// 		this->lights.push_back(this->objs[i]);
-	// 	}
-	// }
 }
 
 vec4 raytracer::read_vector(std::stringstream& ss)
@@ -168,7 +156,6 @@ int raytracer::intersect_scene(ray& v)
 			}
 		}
 	}
-	// v.hit_color = mtls[v.hit_mtl]->get_diffuse_color(v.hit_uv);
 	return closest_obj;
 }
 
@@ -287,7 +274,7 @@ vec4 raytracer::trace_path(ray& v, int depth, int self)
 	if(closest_obj!=-1)
 	{
 		v.hit_color = mtls[v.hit_mtl]->get_diffuse_color(v.hit_uv);
-		if(mtls[v.hit_mtl]->emit)
+		if(mtls[v.hit_mtl]->get_emit())
 		{
 			// std::cout << "we hit the light: " << objs[closest_obj]->diffuse().x << " " << objs[closest_obj]->diffuse().y << " " << objs[closest_obj]->diffuse().z << std::endl;
 			return v.hit_color;//*objs[closest_obj]->shader.emit;
@@ -313,18 +300,22 @@ vec4 raytracer::trace_path(ray& v, int depth, int self)
 		// 	r.refract_obj = -1;
 		// }
 
-		double rng = randd()*mtls[v.hit_mtl]->energy;
-		if (rng < mtls[v.hit_mtl]->refract)
+		double rng = randd()*mtls[v.hit_mtl]->get_energy();
+		if (rng < mtls[v.hit_mtl]->get_refract())
 		{
 // std::cout << "ERROR" << std::endl;
 			//refraction
 			int spectrum = randi(0,3);
 			vec4 dispersion_color = vec4(1,1,1);
-			if(spectrum==0) dispersion_color = vec4(1,0,0);
-			else if(spectrum==1) dispersion_color = vec4(0,1,0);
-			else dispersion_color = vec4(0,0,1);
-			n1 = v.hit_ior;
-			n2 = (!into) ? 1.0 : mtls[v.hit_mtl]->get_dispersion_ior(dispersion_color);//ior;
+			// if(spectrum==0) dispersion_color = vec4(1,0,0);
+			// else if(spectrum==1) dispersion_color = vec4(0,1,0);
+			// else dispersion_color = vec4(0,0,1);
+
+			// for(int i=0; i<3; i++)
+			// {
+
+			n1 = v.prior_ior;
+			n2 = (!into) ? 1.0 : mtls[v.hit_mtl]->get_ior(dispersion_color);//ior;
 
 			double R0s = ((n1 - n2)*(n1 - n2))/((n1+n2)*(n1+n2));
 			double R0 = R0s;//*R0s;
@@ -359,17 +350,18 @@ vec4 raytracer::trace_path(ray& v, int depth, int self)
 				org += (dir*ray_tolerance);
 				r.o = org;
 				r.d = dir;
-				r.hit_ior = n2;
+				r.prior_ior = n2;
 				// ray f(org, fract);
 				// f.refract_obj = (v.refract_obj==closest_obj) ? -1.0 : closest_obj; 
 				// f.refract_bounces = v.refract_bounces+1;
 				// f.debug = v.debug;
-				color += 3.0*dispersion_color*mtls[v.hit_mtl]->get_refract_color()*trace_path(r, depth+1, closest_obj);
+				color += dispersion_color*mtls[v.hit_mtl]->get_refract_color()*trace_path(r, depth+1, closest_obj);
 			}
 			else
 			{
 				//reflection
-				vec4 dir = v.hit_norm*(v.hit_norm.dot(inc)*2) - inc;
+				// vec4 dir = v.hit_norm*(v.hit_norm.dot(inc)*2) - inc;
+				vec4 dir = inc.reflect(v.hit_norm);
 				org += (dir*ray_tolerance);
 				dir.normalize();
 				r.o = org;
@@ -378,13 +370,15 @@ vec4 raytracer::trace_path(ray& v, int depth, int self)
 				color += mtls[v.hit_mtl]->get_refract_color()*trace_path(r, depth+1, closest_obj);
 			}
 		}
-		else if(rng < mtls[v.hit_mtl]->refract + mtls[v.hit_mtl]->reflect)
+		// }
+		else if(rng < mtls[v.hit_mtl]->get_refract() + mtls[v.hit_mtl]->get_reflect())
 		{
 // if(v.debug) std::cout << "SPEC" << std::endl;
 // r.debug = v.debug;
 // std::cout << "ERROR" << std::endl;
 			//reflect
-			vec4 dir = v.hit_norm*(v.hit_norm.dot(inc)*2) - inc;
+			// vec4 dir = v.hit_norm*(v.hit_norm.dot(inc)*2) - inc;
+			vec4 dir = inc.reflect(v.hit_norm);
 			org += (dir*ray_tolerance);
 			vec4 up(0.0,1.0,0.0);
 			vec4 axis_x = dir.cross(up);
@@ -687,10 +681,6 @@ int main(int argc, char *argv[])
 	double aspect_ratio = (double)r.image_height/(double)r.image_width;
 	double samples = r.samples1D*r.samples1D;
 
-	std::cout << "resolution: " << r.image_width << " x " << r.image_height << std::endl;
-	std::cout << "samples1D: " << r.samples1D << std::endl;
-	std::cout << "fov (radians): " << fov << std::endl;
-
 	//calculate image plane size in world space
 	double scene_width = tan(fov/2)*2;
 	double scene_height = tan((fov*aspect_ratio)/2)*2;
@@ -712,7 +702,6 @@ int main(int argc, char *argv[])
 
 	#pragma omp parallel for schedule(dynamic, 2)
 	for(int i=0; i<r.image_width; i++)
-	// for(int i=image_width-1; i>=0; i--)
 	{
 		for(int j=0; j<r.image_height; j++)
 		{

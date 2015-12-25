@@ -64,8 +64,33 @@ vec4 material::get_map_color(vec2 uv)
 	return this->diff_map.getpixel(uv.u, uv.v);
 }
 
-double material::get_dispersion_ior(vec4 color)
+double material::get_ior(vec4 color)
 {
 	double wavelength = 0.002*(color.x - color.z);
 	return (double)ior + wavelength;
+}
+
+double material::get_diffuse()
+{
+	return diffuse;
+}
+
+double material::get_reflect()
+{
+	return reflect;
+}
+
+double material::get_refract()
+{
+	return refract;
+}
+
+double material::get_emit()
+{
+	return emit;
+}
+
+double material::get_energy()
+{
+	return energy;
 }

@@ -245,6 +245,7 @@ void mesh::readobj(std::string& filepath)
 	if(objfile==NULL)
 	{
 		std::cout << "Error loading file " << filepath << std::endl;
+		return;
 	}
 	char line[128];
 	while (fgets(line, sizeof(line), objfile))
@@ -304,8 +305,6 @@ void mesh::readobj(std::string& filepath)
 		}
 	}
 
-	std::cout << "verts: " << verts.size() << std::endl;
-	std::cout << "norms: " << norms.size() << std::endl;
 	fclose(objfile);
 
 	//set bbox for each polygon
