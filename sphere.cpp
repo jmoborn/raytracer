@@ -85,9 +85,8 @@ vec4 sphere::get_normal(const vec4& p)
 vec2 sphere::get_uv(const vec4& p)
 {
 	vec4 p_rel = p - c;
-	double pi = 3.1415;
-	double u = acos(p_rel.z/(sqrt(p_rel.x*p_rel.x+p_rel.y*p_rel.y+p_rel.z*p_rel.z)))/(pi);
-	double v = (atan(p_rel.y/p_rel.z)+pi)/(2.0*pi);
+	double u = acos(p_rel.z/(sqrt(p_rel.x*p_rel.x+p_rel.y*p_rel.y+p_rel.z*p_rel.z)))/(M_PI);
+	double v = (atan(p_rel.y/p_rel.z)+M_PI)/(2.0*M_PI);
 	return vec2(u, v);
 // std::cout << "u: " << u << " v: " << v << std::endl;
 }

@@ -1,29 +1,25 @@
 #include "raytracer.h"
 
-double when()
-{
-    struct timeval tp;
-    gettimeofday(&tp, NULL);
-    return ((double) tp.tv_sec + (double) tp.tv_usec * 1e-6);
-}
+const double raytracer::ray_tolerance = 0.000001;
 
 raytracer::raytracer(std::string scenefile)
 {
-	// srand(time(NULL));
 	max_depth = 5;
-	shadow_samples = 1;
-	reflect_samples = 1;
-	refract_samples = 1;
-	samples = 3;
 	ambience = 0.5;
-	ray_tolerance = 0.001;
 	
 	load_scene(scenefile);
 }
 
 raytracer::~raytracer()
 {
-	
+	for(int i=0; i<objs.size(); i++)
+	{
+		free(objs[i]);
+	}
+	for(int i=0; i<mtls.size(); i++)
+	{
+		free(mtls[i]);
+	}
 }
 
 void raytracer::load_scene(std::string& scenefile)
@@ -44,6 +40,7 @@ void raytracer::load_scene(std::string& scenefile)
 		{
 			continue;
 		}
+		// TODO: environment info -- path depth, environment light
 		if(tok=="c")
 		{
 			std::cout << "creating camera" << std::endl;
@@ -108,7 +105,7 @@ void raytracer::load_scene(std::string& scenefile)
 			std::cout << "  position " << s->c.x << " " << s->c.y << " " << s->c.z << std::endl;
 			this->objs.push_back(s);
 			//check for emission
-			if(mtls[s->mtl_idx]->get_emit()>0.0)
+			if(mtls[s->get_mtl_idx()]->get_emit()>0.0)
 			{
 				std::cout << "  is light" << std::endl;
 				this->lights.push_back(s);
@@ -159,7 +156,23 @@ int raytracer::intersect_scene(ray& v)
 	return closest_obj;
 }
 
-vec4 raytracer::shade(ray& v, int depth, int self)
+int raytracer::intersect_shadow(ray& v)
+{
+	int hit = 0;
+	double light_dist = v.t - ray_tolerance;
+	for(int o=0; o<objs.size(); o++)
+	{
+		bool hit_o = objs[o]->intersect(v);
+		if(hit_o&&v.t<light_dist)
+		{
+			hit = 1;
+			break;
+		}
+	}
+	return hit;
+}
+
+vec4 raytracer::shade(ray& v)
 {
 	vec4 color;
 	for(int l=0; l<lights.size(); l++)
@@ -184,21 +197,12 @@ vec4 raytracer::shade(ray& v, int depth, int self)
 		vec4 l_org(pt);
 		l_org += (l_dir*ray_tolerance);
 		ray vs(l_org, l_dir);
-		int hits = 0;
 
 		this->lights[l]->intersect(vs);
-		double light_dist = vs.t;
-		for(int o=0; o<objs.size(); o++)
-		{
-			bool hit_o = objs[o]->intersect(vs);
-			if(hit_o&&vs.t<light_dist)
-			{
-				hits++;
-				break;
-			}
-		}
+		int hit = intersect_shadow(vs);
+
 		double shadow_mult = 0.0;
-		if(!hits)
+		if(!hit)
 		{
 			//std::cout << "hit light" << std::endl;
 			double omega = 2*M_PI*(1-cos_a_max);
@@ -216,7 +220,7 @@ vec4 raytracer::shade(ray& v, int depth, int self)
 		vec4 eye = v.d*(-1);
 		reflect.normalize();
 		// color += v.hit_color*ambience + v.hit_color * lights[l]->diffuse() * std::max(0.0, n_dot_l);
-		vec4 light_color = mtls[lights[l]->mtl_idx]->get_diffuse_color();
+		vec4 light_color = mtls[lights[l]->get_mtl_idx()]->get_diffuse_color();
 		// color += v.hit_color * lights[l]->diffuse() * std::max(0.0, n_dot_l);
 		color += v.hit_color * light_color * std::max(0.0, n_dot_l);
 		// double phong = objs[self]->shader.specular;
@@ -252,23 +256,11 @@ vec4 raytracer::shade(ray& v, int depth, int self)
 	// return color;
 }
 
-vec4 raytracer::trace_path(ray& v, int depth, int self)
+vec4 raytracer::trace_path(ray& v, int depth)
 {
 	vec4 color;
 	if(depth>max_depth) return color; // TODO: russian roulette
-	// int closest_obj = -1;
-	// double min_dist = std::numeric_limits<double>::infinity();
-	// for(int o=0; o<objs.size(); o++)
-	// {
-	// 	if(objs[o]->intersect(v))
-	// 	{
-	// 		if(v.t<min_dist)
-	// 		{
-	// 			min_dist = v.t;
-	// 			closest_obj = o;
-	// 		}
-	// 	}
-	// }
+
 	int closest_obj = intersect_scene(v);
 	
 	if(closest_obj!=-1)
@@ -281,7 +273,7 @@ vec4 raytracer::trace_path(ray& v, int depth, int self)
 			// return objs[closest_obj]->diffuse();
 		}
 		v.hit_norm.normalize();
-		color += shade(v, depth, closest_obj);
+		color += shade(v);
 
 		vec4 org = v.end();
 		vec4 inc = v.d*(-1);
@@ -304,7 +296,7 @@ vec4 raytracer::trace_path(ray& v, int depth, int self)
 		if (rng < mtls[v.hit_mtl]->get_refract())
 		{
 // std::cout << "ERROR" << std::endl;
-			//refraction
+			// refraction
 			int spectrum = randi(0,3);
 			vec4 dispersion_color = vec4(1,1,1);
 			// if(spectrum==0) dispersion_color = vec4(1,0,0);
@@ -327,7 +319,7 @@ vec4 raytracer::trace_path(ray& v, int depth, int self)
 			if (fresnel_rng > R && cos2t >= 0)
 			{
 
-				//refraction
+				//refract
 				// vec4 fract;
 				double c2 = sqrt(cos2t);
 				vec4 dir = v.d*iof + v.hit_norm * (iof*c1 - c2);
@@ -355,11 +347,11 @@ vec4 raytracer::trace_path(ray& v, int depth, int self)
 				// f.refract_obj = (v.refract_obj==closest_obj) ? -1.0 : closest_obj; 
 				// f.refract_bounces = v.refract_bounces+1;
 				// f.debug = v.debug;
-				color += dispersion_color*mtls[v.hit_mtl]->get_refract_color()*trace_path(r, depth+1, closest_obj);
+				color += dispersion_color*mtls[v.hit_mtl]->get_refract_color()*trace_path(r, depth+1);
 			}
 			else
 			{
-				//reflection
+				//reflect
 				// vec4 dir = v.hit_norm*(v.hit_norm.dot(inc)*2) - inc;
 				vec4 dir = inc.reflect(v.hit_norm);
 				org += (dir*ray_tolerance);
@@ -367,7 +359,7 @@ vec4 raytracer::trace_path(ray& v, int depth, int self)
 				r.o = org;
 				r.d = dir;
 				r.refract_obj = (v.refract_obj==closest_obj) ? -1.0 : closest_obj;
-				color += mtls[v.hit_mtl]->get_refract_color()*trace_path(r, depth+1, closest_obj);
+				color += mtls[v.hit_mtl]->get_refract_color()*trace_path(r, depth+1);
 			}
 		}
 		// }
@@ -376,14 +368,14 @@ vec4 raytracer::trace_path(ray& v, int depth, int self)
 // if(v.debug) std::cout << "SPEC" << std::endl;
 // r.debug = v.debug;
 // std::cout << "ERROR" << std::endl;
-			//reflect
+			// reflect
 			// vec4 dir = v.hit_norm*(v.hit_norm.dot(inc)*2) - inc;
 			vec4 dir = inc.reflect(v.hit_norm);
 			org += (dir*ray_tolerance);
 			vec4 up(0.0,1.0,0.0);
 			vec4 axis_x = dir.cross(up);
 			vec4 axis_y = axis_x.cross(dir);
-			double dist_radius = 0.0;
+			double dist_radius = 0.0; // TODO: per material glossy reflection control
 			
 			double cur_theta = randd()*2.0*M_PI;
 			double cur_radius = randd()*dist_radius;
@@ -394,7 +386,7 @@ vec4 raytracer::trace_path(ray& v, int depth, int self)
 			dir.normalize();
 			r.o = org;
 			r.d = dir;
-			color += mtls[v.hit_mtl]->get_reflect_color()*trace_path(r, depth+1, closest_obj);
+			color += mtls[v.hit_mtl]->get_reflect_color()*trace_path(r, depth+1);
 
 			// for(int i=0; i<reflect_samples; i++)
 			// {
@@ -417,6 +409,7 @@ vec4 raytracer::trace_path(ray& v, int depth, int self)
 		{
 // if(v.debug) std::cout << "DIFF" << std::endl;
 // r.debug = v.debug;
+			// diffuse
 			double r1 = 2*M_PI*randd();
 			double r2 = randd(), r2s = sqrt(r2);
 			vec4 w_axis(v.hit_norm);
@@ -470,7 +463,7 @@ vec4 raytracer::trace_path(ray& v, int depth, int self)
 			org += (dir*ray_tolerance);
 			r.o = org;
 			r.d = dir;
-			color += v.hit_color*trace_path(r, depth+1, closest_obj);//*(pow(0.5, depth));
+			color += v.hit_color*trace_path(r, depth+1);//*(pow(0.5, depth));
 		}
 	}
 	else
@@ -485,103 +478,6 @@ vec4 raytracer::trace_path(ray& v, int depth, int self)
 	}
 	return color;
 }
-
-/*
-deprecated
-*/
-// vec4 raytracer::trace_ray(ray& v, int depth, int self)
-// {
-// 	int closest_obj = -1;
-// 	double min_dist = std::numeric_limits<double>::infinity();
-// 	vec4 color;
-// 	for(int o=0; o<objs.size(); o++)
-// 	{
-// 		if(objs[o]->intersect(v))
-// 		{
-// 			if(v.t<min_dist)
-// 			{
-// 				min_dist = v.t;
-// 				closest_obj = o;
-// 			}
-// 		}
-// 	}
-// 	if(closest_obj!=-1)
-// 	{
-// 		v.hit_norm.normalize();
-// 		color += shade(v, depth, closest_obj);
-// 		//do we have reflection or refraction?
-// 		if(((objs[closest_obj]->shader.reflect > 0)||(objs[closest_obj]->shader.refract > 0))&&(depth<max_depth))
-// 		{
-// 			vec4 org = v.end();
-// 			vec4 inc = v.d*(-1);
-// 			vec4 refl_color, fract_color;
-// 			double n1, n2;
-// 			ray r;
-// 			if(v.refract_obj == closest_obj)
-// 			{
-// 				v.hit_norm *= -1;
-// 				r.refract_obj = -1;
-// 			}
-// 			//calculate reflection ray
-// 			if(objs[closest_obj]->shader.reflect > 0)
-// 			{
-// 				vec4 dir = v.hit_norm*(v.hit_norm.dot(inc)*2) - inc;
-// 				vec4 reflect_org = org + (dir*ray_tolerance);
-// 				vec4 up(0.0,1.0,0.0);
-// 				vec4 axis_x = dir.cross(up);
-// 				vec4 axis_y = axis_x.cross(dir);
-// 				double dist_radius = 0.75;
-// 				vec4 total_refl_color = vec4(0.0,0.0,0.0);
-// 				for(int i=0; i<reflect_samples; i++)
-// 				{
-// 					ray cur_r(r);
-// 					double cur_theta = randd()*2.0*M_PI;
-// 					double cur_radius = randd()*dist_radius;
-// 					double cur_x = cur_radius*cos(cur_theta);
-// 					double cur_y = cur_radius*sin(cur_theta);
-// 					vec4 cur_dir(dir);
-// 					cur_dir += (axis_x*cur_x);
-// 					cur_dir += (axis_y*cur_y);
-// 					cur_dir.normalize();
-// 					cur_r.o = reflect_org;
-// 					cur_r.d = cur_dir;
-// 					total_refl_color += objs[closest_obj]->reflect()*trace_ray(cur_r, depth+1, closest_obj);
-// 				}
-// 				refl_color = total_refl_color*(1.0/reflect_samples);
-// 			}
-// 			//calculate refraction ray
-// 			if(objs[closest_obj]->shader.refract > 0)
-// 			{
-// 				n1 = (self == -1) ? 1.0 : objs[self]->shader.ior;
-// 				n2 = (v.refract_obj==closest_obj) ? 1.0 : objs[closest_obj]->shader.ior;
-// 				double iof = n1/n2;
-// 				double c1 = -v.hit_norm.dot(v.d);
-// 				double c2 = sqrt(1-iof*iof*(1-c1*c1));
-// 				vec4 fract = v.d*iof + v.hit_norm * (iof*c1 - c2);
-// 				fract.normalize();
-// 				vec4 refract_org = org + (fract*ray_tolerance);
-// 				ray f(refract_org, fract);
-// 				f.refract_obj = (v.refract_obj==closest_obj) ? -1.0 : closest_obj; 
-// 				fract_color = objs[closest_obj]->refract()*trace_ray(f, depth+1, closest_obj);
-// 			}
-// 			//fresnel effect with schlick's approximation
-// 			if(objs[closest_obj]->shader.reflect > 0&&objs[closest_obj]->shader.refract > 0)
-// 			{
-// 				double R0s = ((n1 - n2)*(n1 - n2))/((n1+n2)*(n1+n2));
-// 				double R0 = R0s*R0s;
-// 				double R = R0 + (1-R0)*pow((1-v.hit_norm.dot(inc)), 5.0);
-// 				refl_color *= R;
-// 				fract_color *= (1-R);
-// 			}
-// 			color += (refl_color + fract_color);
-// 		}
-// 	}
-// 	else
-// 	{
-// 		color += vec4(0.2, 0.2, 0.2);
-// 	}
-// 	return color;
-// }
 
 // returns a random double between 0 and 1
 double raytracer::randd()
@@ -615,82 +511,33 @@ int raytracer::randi(int lo, int hi)
 
 void raytracer::init_rand(int num_threads)
 {
-	// srand(time(NULL));
+	srand(time(NULL));
 	rand_seed = new unsigned int[num_threads];
 	for(int i=0; i<num_threads; i++)
 	{
-		rand_seed[i] = i;//rand();
+		rand_seed[i] = rand();
 	}
 }
 
-double raytracer::trace_shadow(ray& v, int self, int light)
+void raytracer::render_image(std::string& outfile)
 {
-	int hits = 0;
-	for(int i=0; i<this->shadow_samples; i++)
-	{
-		ray vs = v;
-		double x = randd_negative();
-		double y = randd_negative();
-		double z = randd_negative();
-		vec4 offset(x,y,z);
-		offset.normalize();
-		offset *= this->lights[light]->r;
-		vec4 new_dir = (this->lights[light]->c + offset) - vs.o;
-		new_dir.normalize();
-		vs.o += (new_dir*ray_tolerance);
-		vs.d = new_dir;
-		this->lights[light]->intersect(vs);
-		double light_dist = vs.t;
-		for(int o=0; o<objs.size(); o++)
-		{
-			bool hit_o = objs[o]->intersect(vs);
-			if(hit_o&&vs.t<light_dist)
-			{
-				hits++;
-				break;
-			}
-		}
-	}
-	
-	return ((double)(this->shadow_samples - hits))/((double)this->shadow_samples);
-}
-
-// g++ *.cpp -O3 -fopenmp -o raytracer
-int main(int argc, char *argv[])
-{
-	std::string scenefile;
-	std::string outfile = "test.ppm";
-	if(argc < 2)
-	{
-		std::cout << "No scene file parameter: Loading default scene." << std::endl;
-		scenefile = "scenes/test.scene";
-	}
-	else
-	{
-		scenefile = argv[1];
-	}
-	raytracer r(scenefile);
-
-	//define camera properties
+	// define camera properties
 	// int image_width = 1168;
 	// int image_height = 657;
 	vec4 look_from(0,0,1);
-	double fov = r.fov * (M_PI/180.0);//radians
+	double r_fov = fov * (M_PI/180.0);// radians
 
-	pixelmap pic(r.image_width, r.image_height);
-	double aspect_ratio = (double)r.image_height/(double)r.image_width;
-	double samples = r.samples1D*r.samples1D;
+	pixelmap pic(image_width, image_height);
+	double aspect_ratio = (double)image_height/(double)image_width;
+	double samples = samples1D*samples1D;
 
-	//calculate image plane size in world space
-	double scene_width = tan(fov/2)*2;
-	double scene_height = tan((fov*aspect_ratio)/2)*2;
-	double pixel_width = scene_width/r.image_width;
-	double pixel_slice = pixel_width/r.samples1D;
+	// calculate image plane size in world space
+	double scene_width = tan(r_fov/2)*2;
+	double scene_height = tan((r_fov*aspect_ratio)/2)*2;
+	double pixel_width = scene_width/image_width;
+	double pixel_slice = pixel_width/samples1D;
 
-	//start timer
-	double start = when();
-
-	int total_pixels = r.image_width*r.image_height;
+	int total_pixels = image_width*image_height;
 	double last_report = 0;
 
 	int thread_count = 1;
@@ -698,26 +545,26 @@ int main(int argc, char *argv[])
 	thread_count = omp_get_max_threads();
 	#endif
 	std::cout << "threads: " << thread_count << std::endl;
-	r.init_rand(thread_count);
+	init_rand(thread_count);
 
 	#pragma omp parallel for schedule(dynamic, 2)
-	for(int i=0; i<r.image_width; i++)
+	for(int i=0; i<image_width; i++)
 	{
-		for(int j=0; j<r.image_height; j++)
+		for(int j=0; j<image_height; j++)
 		{
-			int ii = i - r.image_width/2;
-			int jj = j - r.image_height/2;
+			int ii = i - image_width/2;
+			int jj = j - image_height/2;
 			double x = ii*pixel_width + pixel_slice/2;
 			double y = jj*pixel_width + pixel_slice/2;
 			
 			vec4 color(0,0,0);
-			//for each sample
-			for(int m=0; m<r.samples1D; m++)
+			// for each sample
+			for(int m=0; m<samples1D; m++)
 			{
-				for(int n=0; n<r.samples1D; n++)
+				for(int n=0; n<samples1D; n++)
 				{
-					double xoff = r.randd_negative()*pixel_slice;
-					double yoff = r.randd_negative()*pixel_slice;
+					double xoff = randd_negative()*pixel_slice;
+					double yoff = randd_negative()*pixel_slice;
 					vec4 dir(x+(pixel_slice*m)+xoff,y+(pixel_slice*n)+yoff,0);
 					dir -= look_from;
 					dir.normalize();
@@ -738,7 +585,7 @@ v.debug = 0;
 // 	v.debug = 0;
 // }
 // std::cout << "before trace" << std::endl;
-					color += r.trace_path(v, 0, -1);
+					color += trace_path(v, 0);
 // std::cout << "after trace" << std::endl;
 				}
 			}
@@ -763,8 +610,36 @@ v.debug = 0;
 		}
 	}
 	pic.writeppm(outfile);
+}
 
-	// clock_t time_gone_by = clock() - start;
+double when()
+{
+    struct timeval tp;
+    gettimeofday(&tp, NULL);
+    return ((double) tp.tv_sec + (double) tp.tv_usec * 1e-6);
+}
+
+// g++ *.cpp -O3 -fopenmp -o raytracer
+int main(int argc, char *argv[])
+{
+	std::string scenefile;
+	std::string outfile = "test.ppm";
+	if(argc < 2)
+	{
+		std::cout << "No scene file parameter: Loading default scene." << std::endl;
+		scenefile = "scenes/test.scene";
+	}
+	else
+	{
+		scenefile = argv[1];
+	}
+	raytracer r(scenefile);
+
+	// start timer
+	double start = when();
+
+	r.render_image(outfile);
+
 	double time_gone_by = when() - start;
 	std::cout << "TOTAL TIME: " << time_gone_by << " seconds" << std::endl;
 	

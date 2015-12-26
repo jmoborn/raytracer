@@ -133,17 +133,6 @@ bool mesh::intersect(ray& r)
 
 prim_hit mesh::intersect_bvh(ray& r, bvh_node<face>* node, int level)
 {
-	// if (r.debug)
-	// {
-	// 	std::cout << level << std::endl;
-	// 	std::cout << "  min: " << node->min[0] << " " << node->min[1] << " " << node->min[2] << std::endl;
-	// 	std::cout << "  max: " << node->max[0] << " " << node->max[1] << " " << node->max[2] << std::endl;
-	// 	if(level==2&&node->max[1]==0.15)
-	// 	{
-	// 		std::cout << "WHAT THE FUCK IS HAPPENING" << std::endl;
-	// 		std::cout << node->prims.size() << std::endl;
-	// 	}
-	// }
 	prim_hit min_hit;
 	min_hit.dist = std::numeric_limits<double>::infinity();
 	min_hit.prim = NULL;
@@ -232,11 +221,6 @@ prim_hit mesh::intersect_bvh(ray& r, bvh_node<face>* node, int level)
 		else if (left.dist < right.dist) return left;
 		else return right;
 	}
-}
-
-vec4 mesh::get_normal(const vec4& p)
-{
-	return vec4(0, 1, 0);
 }
 
 void mesh::readobj(std::string& filepath)

@@ -51,7 +51,6 @@ public:
 	~mesh(){};
 	bool intersect(ray& r);
 	prim_hit intersect_bvh(ray& r, bvh_node<face>* node, int level);
-	vec4 get_normal(const vec4& p);
 
 	std::vector<vec4> verts;
 	std::vector<vec4> norms;

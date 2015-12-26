@@ -28,16 +28,22 @@ public:
 	raytracer(std::string scenefile);
 	~raytracer();
 
+	void render_image(std::string& outfile);
 	int intersect_scene(ray &v);
-	vec4 shade(ray& v, int depth, int self=-1);
-	vec4 trace_ray(ray& v, int depth, int self);
-	vec4 trace_path(ray& v, int depth, int self);
-	double trace_shadow(ray& v, int self, int light);
+	int intersect_shadow(ray &v);
+	vec4 shade(ray& v);
+	vec4 trace_path(ray& v, int depth);
 	void load_scene(std::string& scenefile);
 	double randd();
 	double randd_negative();
 	int randi(int lo, int hi);
 	void init_rand(int);
+
+	static const double ray_tolerance;
+
+
+private:
+	vec4 read_vector(std::stringstream& ss);
 
 	std::vector<material*> mtls;
 	std::vector<object*> objs;
@@ -49,17 +55,8 @@ public:
 	double fov;	
 
 	int max_depth;
-	int shadow_samples;
-	int reflect_samples;
-	int refract_samples;
 	double ambience;
-	double ray_tolerance;
-	double samples;
 	unsigned int *rand_seed;
-
-
-private:
-	vec4 read_vector(std::stringstream& ss);
 };
 
 #endif
