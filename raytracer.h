@@ -29,17 +29,21 @@ public:
 	~raytracer();
 
 	void render_image(std::string& outfile);
-	int intersect_scene(ray &v);
-	int intersect_shadow(ray &v);
+	int intersect_scene(ray& v);
+	int intersect_shadow(ray& v);
 	vec4 shade(ray& v);
 	vec4 trace_path(ray& v, int depth);
 	void load_scene(std::string& scenefile);
+	void print_scene_info(std::ostream& out);
 	double randd();
 	double randd_negative();
 	int randi(int lo, int hi);
 	void init_rand(int);
 
 	static const double ray_tolerance;
+	static const short DIFF;
+	static const short REFL;
+	static const short REFR;
 
 
 private:
@@ -54,9 +58,16 @@ private:
 	int samples1D;
 	double fov;	
 
+	double focal_length;
+	double lense_radius;
+
 	int max_depth;
 	double ambience;
 	unsigned int *rand_seed;
+
+	vec4 rgb_total;
+	double rand_total;
+	vec4 rgb_denied;
 };
 
 #endif

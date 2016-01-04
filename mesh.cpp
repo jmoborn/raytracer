@@ -315,3 +315,11 @@ void mesh::readobj(std::string& filepath)
 		// faces[i].zmin -= epsilon;
 	}
 }
+
+void mesh::print_info(std::ostream &out)
+{
+	out << "mesh" << std::endl;
+	out << "  vertices: " << verts.size() << std::endl;
+	out << "  faces: " << faces.size() << std::endl;
+	out << "  material index: " << mtl_idx << std::endl;
+}

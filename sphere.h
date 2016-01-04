@@ -15,6 +15,7 @@ public:
 	sphere(double radius, vec4 center, int material_index);
 	~sphere(){};
 	bool intersect(ray& r);
+	void print_info(std::ostream &out);
 	vec4 get_normal(const vec4& p);
     vec2 get_uv(const vec4& p);
 	double r;

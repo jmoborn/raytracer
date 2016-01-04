@@ -50,7 +50,7 @@ vec4 material::get_reflect_color()
 
 vec4 material::get_refract_color()
 {
-	return diffuse_color*refract;
+	return diffuse_color*refract; // TODO: change to refract_color
 }
 
 void material::add_diffuse_map(pixelmap &p)
@@ -64,10 +64,38 @@ vec4 material::get_map_color(vec2 uv)
 	return this->diff_map.getpixel(uv.u, uv.v);
 }
 
-double material::get_ior(vec4 color)
+double material::get_ior(double mult)
 {
-	double wavelength = 0.002*(color.x - color.z);
-	return (double)ior + wavelength;
+	
+	// wavelength spectrum(1, color);
+	// double wavelength = spectrum.get_wavelength();
+
+	// double wavelength = .4 +.3*mult;
+
+	// double B1 = 1.03961212;
+	// double B2 = 0.231792344;
+	// double B3 = 1.01046945;
+	// double C1 = .00600069867;
+	// double C2 = .0200179144;
+	// double C3 = .0103560653;
+
+	// double lambda2 = wavelength*wavelength;
+
+	// double n2 = 1 + (B1*lambda2)/(lambda2-C1) + (B2*lambda2)/(lambda2-C2) + (B3*lambda2)/(lambda2-C3);
+	// // std::cout << "ior: " << sqrt(n2) << std::endl;
+	// return sqrt(n2);
+
+
+	// double wavelength = 0.01*(2*color.x - color.z + color.y);
+	// if(wavelength>0) 
+	// std::cout << "get_ior: " << ior << " + " << wavelength << " = " << ior + wavelength << std::endl;
+
+	// double wavelength = 0.06*mult*(color.x - color.z);
+	// return ior + wavelength;
+
+	// std::cout << "mult: " << mult << std::endl;
+	// return ior + (mult-0.5)*0.000009;
+	return ior + (mult-0.5)*0.06;
 }
 
 double material::get_diffuse()

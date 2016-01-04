@@ -1,11 +1,21 @@
 #include "raytracer.h"
 
 const double raytracer::ray_tolerance = 0.000001;
+const short raytracer::DIFF = 0;
+const short raytracer::REFL = 1;
+const short raytracer::REFR = 2;
 
 raytracer::raytracer(std::string scenefile)
 {
-	max_depth = 5;
+	max_depth = 10;
 	ambience = 0.5;
+	focal_length = 3.43;
+	// f/1.4 f/2 f/2.8 f/4 f/5.6 f/8
+	// f_stop = 4.0;
+	lense_radius = 0.033;
+
+	rgb_total = vec4(0,0,0);
+	rgb_denied = vec4(0,0,0);
 	
 	load_scene(scenefile);
 }
@@ -28,6 +38,7 @@ void raytracer::load_scene(std::string& scenefile)
 	if(objfile==NULL)
 	{
 		std::cout << "Error loading file " << scenefile << std::endl;
+		return;
 	}
 	char line[256];
 	while (fgets(line, sizeof(line), objfile))
@@ -43,19 +54,15 @@ void raytracer::load_scene(std::string& scenefile)
 		// TODO: environment info -- path depth, environment light
 		if(tok=="c")
 		{
-			std::cout << "creating camera" << std::endl;
 			std::string width_str, height_str, fov_str, samples_str;
 			ss >> width_str >> height_str >> fov_str >> samples_str;
 			this->image_width = atoi(width_str.c_str());
 			this->image_height = atoi(height_str.c_str());
 			this->samples1D = atoi(fov_str.c_str());
 			this->fov = atof(samples_str.c_str());
-			std::cout << "  resolution: " << image_width << " x " << image_height << std::endl;
-			std::cout << "  samples: " << samples1D << " x " << samples1D << std::endl;
 		}
 		if(tok=="m")
 		{
-			std::cout << "creating material" << std::endl;
 			vec4 diff = read_vector(ss);
 			vec4 refl = read_vector(ss);
 			vec4 refr = read_vector(ss);
@@ -82,11 +89,9 @@ void raytracer::load_scene(std::string& scenefile)
 		}
 		if(tok=="o")
 		{
-			std::cout << "creating mesh" << std::endl;
 			std::string objfile, smtl;
 			ss >> objfile >> smtl;
 			mesh *m = new mesh(objfile, atoi(smtl.c_str()));
-			std::cout << "  verts: " << m->verts.size() << std::endl;
 			this->objs.push_back(m);
 			// TODO: support for mesh lights
 			// if(m->shader.emit>0.0)
@@ -96,39 +101,44 @@ void raytracer::load_scene(std::string& scenefile)
 		}
 		if(tok=="s")
 		{
-			std::cout << "creating sphere" << std::endl;
 			std::string sradius, smtl;
 			ss >> sradius >> smtl;
 			vec4 s_pos = read_vector(ss);
 			sphere *s = new sphere(atof(sradius.c_str()), s_pos, atoi(smtl.c_str()));
-			std::cout << "  radius " << s->r << std::endl;
-			std::cout << "  position " << s->c.x << " " << s->c.y << " " << s->c.z << std::endl;
 			this->objs.push_back(s);
 			//check for emission
 			if(mtls[s->get_mtl_idx()]->get_emit()>0.0)
 			{
-				std::cout << "  is light" << std::endl;
 				this->lights.push_back(s);
 			}
 		}
 		if(tok=="l")/*deprecated*/
 		{
-			std::cout << "warning: deprecated, no light created" << std::endl;
 			std::string sradius;
 			ss >> sradius;
 			vec4 l_pos = read_vector(ss);
 			vec4 emit = read_vector(ss);
-			// sphere *l = new sphere(atof(sradius.c_str()), l_pos);
-			// std::cout << "radius " << l->r << std::endl;
-			// std::cout << "position " << l->c.x << " " << l->c.y << " " << l->c.z << std::endl;
-			// l->shader.diffuse_color = emit;
-			// vec4 tcol = l->diffuse();
-			// std::cout << "diffuse " << tcol.x << " " << tcol.y << " " << tcol.z << std::endl;
-			// l->shader.emit = tcol.length();
-			// this->lights.push_back(l);
-			// this->objs.push_back(l);
 		}
 	}
+}
+void raytracer::print_scene_info(std::ostream& out)
+{
+	for(int i=0; i<mtls.size(); i++)
+	{
+		out << "material " << i << std::endl;
+		out << "  diffuse: " << mtls[i]->get_diffuse() << ", reflect: " << mtls[i]->get_reflect() <<
+		       ", refract: " << mtls[i]->get_refract() << ", emit: " << mtls[i]->get_emit() << std::endl;
+	}
+
+	for(int i=0; i<objs.size(); i++)
+	{
+		objs[i]->print_info(out);
+	}
+
+	out << "camera" << std::endl;
+	out << "  resolution: " << image_width << " x " << image_height << std::endl;
+	out << "  samples: " << samples1D << " x " << samples1D << std::endl;
+
 }
 
 vec4 raytracer::read_vector(std::stringstream& ss)
@@ -238,7 +248,7 @@ vec4 raytracer::shade(ray& v)
 	// 	vec4 pt = v.end();
 	// 	vec4 light = lights[l]->c - pt;
 	// 	light.normalize();
-	// 	// pt += (light*ray_tolerance);
+	// 	// pt += (light*r.);
 	// 	ray s(pt, light);
 	// 	double shadow_mult = trace_shadow(s, self, l);
 	// 	double n_dot_l = v.hit_norm.dot(light);
@@ -258,8 +268,21 @@ vec4 raytracer::shade(ray& v)
 
 vec4 raytracer::trace_path(ray& v, int depth)
 {
+	if(v.debug) std::cout << std::endl;
 	vec4 color;
-	if(depth>max_depth) return color; // TODO: russian roulette
+	if(depth>max_depth) 
+	{
+		if(v.debug) std::cout << "MAX BOUNCES " << depth << std::endl;
+		// if(v.prior_ior!=0) color += ambience;
+		// if(v.prior_ior!=0 && depth < max_depth+4)
+		// {
+
+		// }
+		// else
+		// {
+			return color; // TODO: russian roulette
+		// }
+	}
 
 	int closest_obj = intersect_scene(v);
 	
@@ -268,6 +291,8 @@ vec4 raytracer::trace_path(ray& v, int depth)
 		v.hit_color = mtls[v.hit_mtl]->get_diffuse_color(v.hit_uv);
 		if(mtls[v.hit_mtl]->get_emit())
 		{
+			// if(v.stack[0]==DIFF && v.stack[1]==REFR) v.hit_color *= 6.0;
+			if(v.debug) std::cout << "EMIT " << depth << std::endl;
 			// std::cout << "we hit the light: " << objs[closest_obj]->diffuse().x << " " << objs[closest_obj]->diffuse().y << " " << objs[closest_obj]->diffuse().z << std::endl;
 			return v.hit_color;//*objs[closest_obj]->shader.emit;
 			// return objs[closest_obj]->diffuse();
@@ -279,12 +304,16 @@ vec4 raytracer::trace_path(ray& v, int depth)
 		vec4 inc = v.d*(-1);
 		vec4 refl_color, fract_color;
 		double n1, n2;
-		ray r;
+		ray r = v.inherit();
 		bool into = true;
 		if(v.hit_norm.dot(v.d)>0)
 		{
 			v.hit_norm *= -1;
 			into = false;
+			// if(v.prior_ior<=1.000001) 
+			// {
+			// 	std::cout << "error$@! wl: " << v.spectrum.get_range_low() << " - " << v.spectrum.get_range_high() << std::endl;
+			// }
 		}
 		// if(v.refract_obj == closest_obj)
 		// {
@@ -297,32 +326,88 @@ vec4 raytracer::trace_path(ray& v, int depth)
 		{
 // std::cout << "ERROR" << std::endl;
 			// refraction
-			int spectrum = randi(0,3);
-			vec4 dispersion_color = vec4(1,1,1);
+			// int spectrum = randi(0,3);
+			// vec4 dispersion_color = vec4(1,1,1);
 			// if(spectrum==0) dispersion_color = vec4(1,0,0);
 			// else if(spectrum==1) dispersion_color = vec4(0,1,0);
 			// else dispersion_color = vec4(0,0,1);
 
-			// for(int i=0; i<3; i++)
+			// for(int i=0; i<v.spectrum.get_num_samples(); i++)
 			// {
 
+			// vec4 dispersion_color = v.spectrum.get_color_sample(i);
+			// wavelength spectrum(1, dispersion_color);
+			// double min_ior = mtls[v.hit_mtl]->get_ior(v.spectrum.get_range_low());
+			// double max_ior = mtls[v.hit_mtl]->get_ior(v.spectrum.get_range_high()); // TODO
+
 			n1 = v.prior_ior;
-			n2 = (!into) ? 1.0 : mtls[v.hit_mtl]->get_ior(dispersion_color);//ior;
+			n2 = (!into) ? 1.0 : mtls[v.hit_mtl]->get_ior(v.spectrum.get_wavelength());//ior;
+			// n2 = (!into) ? 1.0 : min_ior;
 
-			double R0s = ((n1 - n2)*(n1 - n2))/((n1+n2)*(n1+n2));
-			double R0 = R0s;//*R0s;
-			double R = R0 + (1-R0)*pow((1-v.hit_norm.dot(inc)), 5.0);
+
+			vec4 inc_neg = inc*-1;
+			double cos2t;
+			// inc_neg.refract(v.hit_norm, n1, n2, cos2t);
+
+			// if(cos2t>=0 && into && v.spectrum.get_num_samples()>1)
+			// {
+			// 	n2 = max_ior;
+			// 	inc_neg.refract(v.hit_norm, n1, n2, cos2t);
+			// }
+
+			// if(cos2t<0) rgb_denied += v.spectrum.get_total_color();
+			double R = 0.0; // always refract TODO: fresnel reflection
 			double fresnel_rng = randd();
-			double iof = n1/n2;
-			double c1 = -v.hit_norm.dot(v.d);
-			double cos2t = 1-iof*iof*(1-c1*c1);
-			if (fresnel_rng > R && cos2t >= 0)
-			{
 
-				//refract
-				// vec4 fract;
-				double c2 = sqrt(cos2t);
-				vec4 dir = v.d*iof + v.hit_norm * (iof*c1 - c2);
+			// double R0s = ((n1 - n2)*(n1 - n2))/((n1+n2)*(n1+n2));
+			// double R0 = R0s;//*R0s;
+			// double R = R0 + (1-R0)*pow((1-v.hit_norm.dot(inc)), 5.0);
+			// double fresnel_rng = randd();
+			// double iof = n1/n2;
+			// double c1 = -v.hit_norm.dot(v.d);
+			// double cos2t = 1-iof*iof*(1-c1*c1);
+
+			if (fresnel_rng > R )//&& cos2t >= 0)
+			{
+				for(int i=0; i<v.spectrum.get_num_samples(); i++)
+				{
+					if(v.debug) std::cout << "REFRACT " << depth << std::endl;
+				ray r_refract = v.inherit();
+				double rand_dispersion = randd();
+				// double norm_wl;
+				// vec4 dispersion_color = v.spectrum.get_color_sample(i, rand_dispersion, norm_wl);
+				wavelength spectrum = v.spectrum.get_sample(i, rand_dispersion);
+				// wavelength spectrum(1, dispersion_color, norm_wl);
+
+				// dispersion_color = v.spectrum.get_color_sample(i+1);
+				// norm_wl = i*0.3333333;
+				// if (v.spectrum.get_num_samples()>1)
+				// rgb_total += dispersion_color;
+				n2 = (!into) ? 1.0 : mtls[v.hit_mtl]->get_ior(spectrum.get_wavelength());
+				// std::cout << "ior " << n2 << " next color: " << dispersion_color.x << " " << dispersion_color.y << " " << dispersion_color.z << std::endl;
+				// R0s = ((n1 - n2)*(n1 - n2))/((n1+n2)*(n1+n2));
+				// R0 = R0s;//*R0s;
+				//  R = R0 + (1-R0)*pow((1-v.hit_norm.dot(inc)), 5.0);
+				//  fresnel_rng = randd();
+				//  iof = n1/n2;
+				//  c1 = -v.hit_norm.dot(v.d);
+				//  cos2t = 1-iof*iof*(1-c1*c1);
+				// //refract
+				// // vec4 fract;
+				// double c2 = sqrt(cos2t);
+				// // if(n2!=1 || n2!=1.3)
+				// // if(n2>1.3)
+				// // std::cout << "n2: " << n2 << " i: " << i << " color: " << dispersion_color.x << " " << dispersion_color.y << " " << dispersion_color.z << std::endl;
+				// vec4 dir = v.d*iof + v.hit_norm * (iof*c1 - c2);
+
+				vec4 dir = inc_neg.refract(v.hit_norm, n1, n2, cos2t);
+				// if(cos2t<0) std::cout << "total internal reflection" << std::endl;
+	
+				if(cos2t<0) 
+				{
+					n2 = v.prior_ior;
+					dir = inc.reflect(v.hit_norm);
+				}
 				dir.normalize();
 // 				if (v.debug) std::cout << v.refract_bounces << std::endl;
 // 				if (v.refract_bounces==(max_depth-2))
@@ -340,32 +425,47 @@ vec4 raytracer::trace_path(ray& v, int depth)
 // 	std::cout << "origin: " << org.x << " " << org.y << " " << org.z << std::endl;
 // }
 				org += (dir*ray_tolerance);
-				r.o = org;
-				r.d = dir;
-				r.prior_ior = n2;
+				r_refract.o = org;
+				r_refract.d = dir;
+				r_refract.prior_ior = n2;
+				r_refract.spectrum = spectrum;
+				r_refract.stack[depth] = REFR;
+				// r_refract.debug = v.debug;
 				// ray f(org, fract);
 				// f.refract_obj = (v.refract_obj==closest_obj) ? -1.0 : closest_obj; 
 				// f.refract_bounces = v.refract_bounces+1;
 				// f.debug = v.debug;
-				color += dispersion_color*mtls[v.hit_mtl]->get_refract_color()*trace_path(r, depth+1);
+				color += spectrum.get_total_color()*mtls[v.hit_mtl]->get_refract_color()*trace_path(r_refract, depth+1);				
+				
+
+				}
 			}
 			else
 			{
+				if(v.debug) std::cout << "FRESNEL REFLECT " << depth << std::endl;
 				//reflect
 				// vec4 dir = v.hit_norm*(v.hit_norm.dot(inc)*2) - inc;
 				vec4 dir = inc.reflect(v.hit_norm);
-				org += (dir*ray_tolerance);
 				dir.normalize();
+				// if(depth>2) dir = v.d;
+				// dir = v.d;
+				// depth--;
+				org += (dir*ray_tolerance);
 				r.o = org;
 				r.d = dir;
-				r.refract_obj = (v.refract_obj==closest_obj) ? -1.0 : closest_obj;
+				r.stack[depth] = REFL;
+				// r.spectrum = v.spectrum;
+				// r.debug = v.debug;
+				// r.prior_ior = v.prior_ior;//mtls[v.hit_mtl]->get_ior(v.spectrum.get_wavelength());
+				// r.refract_obj = (v.refract_obj==closest_obj) ? -1.0 : closest_obj;
 				color += mtls[v.hit_mtl]->get_refract_color()*trace_path(r, depth+1);
+				// break;
 			}
-		}
 		// }
+		}
 		else if(rng < mtls[v.hit_mtl]->get_refract() + mtls[v.hit_mtl]->get_reflect())
 		{
-// if(v.debug) std::cout << "SPEC" << std::endl;
+if(v.debug) std::cout << "REFLECT " << depth << std::endl;
 // r.debug = v.debug;
 // std::cout << "ERROR" << std::endl;
 			// reflect
@@ -386,6 +486,11 @@ vec4 raytracer::trace_path(ray& v, int depth)
 			dir.normalize();
 			r.o = org;
 			r.d = dir;
+			r.stack[depth] = REFL;
+			// r.spectrum = v.spectrum;
+			// r.debug = v.debug;
+			// r.prior_ior = into ? mtls[v.hit_mtl]->get_ior(v.spectrum.get_wavelength()) : 1.0;
+			// r.prior_ior = v.prior_ior;
 			color += mtls[v.hit_mtl]->get_reflect_color()*trace_path(r, depth+1);
 
 			// for(int i=0; i<reflect_samples; i++)
@@ -407,7 +512,7 @@ vec4 raytracer::trace_path(ray& v, int depth)
 		}
 		else
 		{
-// if(v.debug) std::cout << "DIFF" << std::endl;
+if(v.debug) std::cout << "DIFF " << depth << std::endl;
 // r.debug = v.debug;
 			// diffuse
 			double r1 = 2*M_PI*randd();
@@ -463,11 +568,17 @@ vec4 raytracer::trace_path(ray& v, int depth)
 			org += (dir*ray_tolerance);
 			r.o = org;
 			r.d = dir;
+			r.stack[depth] = DIFF;
+			// r.spectrum = v.spectrum;
+			// r.debug = v.debug;
+			// r.prior_ior = v.prior_ior;
+			// r.prior_ior = into ? mtls[v.hit_mtl]->get_ior(v.spectrum.get_wavelength()) : 1.0;
 			color += v.hit_color*trace_path(r, depth+1);//*(pow(0.5, depth));
 		}
 	}
 	else
 	{
+		if(v.debug) std::cout << "ENV LIGHT " << depth << std::endl;
 		color += ambience;//vec4(0.385, 0.457, 0.55);
 // if(v.debug) 
 // {
@@ -482,6 +593,7 @@ vec4 raytracer::trace_path(ray& v, int depth)
 // returns a random double between 0 and 1
 double raytracer::randd()
 {
+	// return drand48();
 	int tid = 0;
 	#ifdef _OPENMP
 	tid = omp_get_thread_num();
@@ -568,34 +680,37 @@ void raytracer::render_image(std::string& outfile)
 					vec4 dir(x+(pixel_slice*m)+xoff,y+(pixel_slice*n)+yoff,0);
 					dir -= look_from;
 					dir.normalize();
-					ray v(look_from, dir);
-v.debug = 0;
-// if(i==248 &&j==(image_height-155)&&m==0&&n==0) 
+
+					vec4 look_at = look_from + dir*focal_length;
+
+					vec4 org(look_from);
+					double rr = sqrt(randd());
+					double rtheta = 2*M_PI*randd();
+					org.x = rr*cos(rtheta)*lense_radius;
+					org.y = rr*sin(rtheta)*lense_radius;
+					dir = look_at - org;
+					dir.normalize();
+
+					ray v(org, dir);
+// if(i==696&&j==346)
 // {
 // 	v.debug=1;
-// 	std::cout << "debugging" << std::endl;
 // }
-// if(i==70&&j==(image_height -169)&&m==0&&n==0)
-// {
-// 	v.debug = 1;
-// std::cout << " debugging" << std::endl;
-// }
-// else
-// {
-// 	v.debug = 0;
-// }
-// std::cout << "before trace" << std::endl;
 					color += trace_path(v, 0);
-// std::cout << "after trace" << std::endl;
 				}
 			}
 			color *= 1/samples;
-			color.clamp(1.0);
-// std::cout << i << " " << j << std::endl;
-// if(i==1100&&j==600)
-// {
-// std::cout <<"color: " << color.x << " " << color.y << " " << color.z << std::endl;
-// }
+			color.clamp(0.0, 1.0);
+
+
+			// double x = (double)i/(double)image_width;
+			// wavelength wl;
+			// vec4 color = wl.get_color_from_mult(x);
+			// rgb_total += color;
+			// if(x<.34&&x>.32) std::cout << color.x << " " << color.y << " " << color.z << std::endl;
+			if(i==835&&j==346) std::cout << color.x << " " << color.y << " " << color.z << std::endl;
+			// else color = vec4(0,0,0);
+
 			pic.setpixel(i, j, color);
 			// double decimal = ((double)((i+1)*(j+1)))/((double)(total_pixels));
 			// // double decimal = ((double)((image_width - i)*(j+1)))/((double)(total_pixels));
@@ -606,10 +721,14 @@ v.debug = 0;
 			// 	std::cout << (int)(decimal*100.0) << "\%" << std::endl;
 			// 	pic.writeppm(outfile);
 			// }
+			rand_total += randd();
 			
 		}
 	}
 	pic.writeppm(outfile);
+	// std::cout << rgb_total.x << " " << rgb_total.y << " " << rgb_total.z << std::endl;
+	std::cout << rgb_denied.x << " " << rgb_denied.y << " " << rgb_denied.z << std::endl;
+	std::cout << rand_total/((double)total_pixels) << std::endl;
 }
 
 double when()
@@ -633,7 +752,17 @@ int main(int argc, char *argv[])
 	{
 		scenefile = argv[1];
 	}
+	if(argc < 3)
+	{
+		std::cout << "No output file parameter: saving image to test.ppm"
+		outfile = "test.ppm";
+	}
+	else
+	{
+		outfile = argv[2];
+	}
 	raytracer r(scenefile);
+	r.print_scene_info(std::cout);
 
 	// start timer
 	double start = when();

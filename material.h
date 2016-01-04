@@ -18,7 +18,7 @@ public:
 	vec4 get_reflect_color();
 	vec4 get_refract_color();
 	vec4 get_emit_color();
-	double get_ior(vec4 color=vec4(1,1,1));
+	double get_ior(double mult=0.5);
 	double get_diffuse();
 	double get_reflect();
 	double get_refract();

@@ -90,3 +90,11 @@ vec2 sphere::get_uv(const vec4& p)
 	return vec2(u, v);
 // std::cout << "u: " << u << " v: " << v << std::endl;
 }
+
+void sphere::print_info(std::ostream &out)
+{
+	out << "sphere" << std::endl;
+	out << "  radius: " << r << std::endl;
+	out << "  position: " << c << std::endl;
+	out << "  material index: " << mtl_idx << std::endl;
+}

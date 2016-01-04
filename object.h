@@ -15,6 +15,7 @@ public:
 		are only modified if the new intersection point is less than t and greater than 0.
 	*/
 	virtual bool intersect(ray& r)=0;
+	virtual void print_info(std::ostream &out)=0;
 	int get_mtl_idx();
 protected:
 	int mtl_idx;
