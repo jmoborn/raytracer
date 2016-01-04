@@ -7,7 +7,7 @@ const short raytracer::REFR = 2;
 
 raytracer::raytracer(std::string scenefile)
 {
-	max_depth = 10;
+	max_depth = 5;
 	ambience = 0.5;
 	focal_length = 3.43;
 	// f/1.4 f/2 f/2.8 f/4 f/5.6 f/8
@@ -436,7 +436,7 @@ vec4 raytracer::trace_path(ray& v, int depth)
 				// f.refract_bounces = v.refract_bounces+1;
 				// f.debug = v.debug;
 				color += spectrum.get_total_color()*mtls[v.hit_mtl]->get_refract_color()*trace_path(r_refract, depth+1);				
-				
+				// TODO: attenuation
 
 				}
 			}
@@ -745,7 +745,7 @@ int main(int argc, char *argv[])
 	std::string outfile = "test.ppm";
 	if(argc < 2)
 	{
-		std::cout << "No scene file parameter: Loading default scene." << std::endl;
+		std::cout << "No scene file parameter: Loading scenes/test.scene" << std::endl;
 		scenefile = "scenes/test.scene";
 	}
 	else
@@ -754,7 +754,7 @@ int main(int argc, char *argv[])
 	}
 	if(argc < 3)
 	{
-		std::cout << "No output file parameter: saving image to test.ppm"
+		std::cout << "No output file parameter: saving image to test.ppm" << std::endl;
 		outfile = "test.ppm";
 	}
 	else

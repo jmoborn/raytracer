@@ -1,4 +1,6 @@
 raytracer
 =========
 
-A simple ray tracer written in C++
+A monte carlo path tracer written in C++
+
+![example render](http://i.imgur.com/2v4JSX2.jpg "Example Render")
