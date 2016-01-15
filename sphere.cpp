@@ -15,10 +15,6 @@ only positive values of t are considered hits
 */
 bool sphere::intersect(ray& v)
 {
-	// double B = 2*(v.d.x*v.o.x - v.d.x*c.x + v.d.y*v.o.y - 
-	// 			  v.d.y*c.y + v.d.z*v.o.z - v.d.z*c.z);
-	// double C = v.o.x*v.o.x - 2*v.o.x*c.x + c.x*c.x + v.o.y*v.o.y - 
-	// 			2*v.o.y*c.y + c.y*c.y + v.o.z*v.o.z - 2*v.o.z*c.z + c.z*c.z - r*r;
 	vec4 diff = v.o - c;
 	double B = (diff.dot(v.d))*2;
 	double C = diff.dot(diff) - r*r;
@@ -88,7 +84,6 @@ vec2 sphere::get_uv(const vec4& p)
 	double u = acos(p_rel.z/(sqrt(p_rel.x*p_rel.x+p_rel.y*p_rel.y+p_rel.z*p_rel.z)))/(M_PI);
 	double v = (atan(p_rel.y/p_rel.z)+M_PI)/(2.0*M_PI);
 	return vec2(u, v);
-// std::cout << "u: " << u << " v: " << v << std::endl;
 }
 
 void sphere::print_info(std::ostream &out)

@@ -5,20 +5,6 @@ face::face(std::vector<int> pts, std::vector<int> txs, std::vector<int> nms)
 	this->pnts = pts;
 	this->txts = txs;
 	this->nrms = nms;
-
-	// xmin = ymin = zmin = std::numeric_limits<double>::infinity();
-	// xmax = ymax = zmax = -std::numeric_limits<double>::infinity();
-	
-	// for(int i=0; i<pnts.size(); i++)
-	// {
-	// 	if(pnts[0]>xmax) xmax = pnts[0];
-	// 	if(pnts[1]>ymax) ymax = pnts[1];
-	// 	if(pnts[2]>zmax) zmax = pnts[2];
-	// 	if(pnts[0]<xmin) xmin = pnts[0];
-	// 	if(pnts[1]<ymin) ymin = pnts[1];
-	// 	if(pnts[2]<zmin) zmin = pnts[2];
-	// }
-
 }
 
 mesh::mesh(){}
@@ -28,7 +14,6 @@ mesh::mesh(std::string filepath, int material_index)
 	xmin = ymin = zmin = std::numeric_limits<double>::infinity();
 	xmax = ymax = zmax = -std::numeric_limits<double>::infinity();
 	readobj(filepath);
-	// this->shader = m;
 	this->mtl_idx = material_index;
 	std::vector<face*> prims;
 	for(int i=0; i<faces.size(); i++)
@@ -40,95 +25,22 @@ mesh::mesh(std::string filepath, int material_index)
 
 bool mesh::intersect(ray& r)
 {
-	// if (r.debug) std::cout << "intersecting new mesh: " << std::endl;
 	prim_hit face_hit = intersect_bvh(r, hierarchy.root, 0);
 
 	if (face_hit.prim!=NULL)
 	{
 		vec4 N = norms[face_hit.prim->nrms[1]]*face_hit.u + norms[face_hit.prim->nrms[2]]*face_hit.v + norms[face_hit.prim->nrms[0]]*(1 - face_hit.u - face_hit.v);
 		vec2 U = texts[face_hit.prim->txts[1]]*face_hit.u + texts[face_hit.prim->txts[2]]*face_hit.v + texts[face_hit.prim->txts[0]]*(1 - face_hit.u - face_hit.v);
-		// std::cout << texts[faces[i].txts[1]].u << ", " << texts[faces[i].txts[1]].v << std::endl;
-		// std::cout << U.u << ", " << U.v << std::endl; 
 		r.t = face_hit.dist;
 		r.hit_norm = N;
 		r.hit_uv = U;
 		r.hit_mtl = mtl_idx;
-		// r.hit_color = diffuse(U);
-		// closest_face = i;
 		return true;
 	}
 	else
 	{
 		return false;
 	}
-
-	// int closest_face = -1;
-	// //check bounding box first
-	// //for x
-	// double t0 = 0;
-	// double t1 = std::numeric_limits<double>::infinity();
-	// double invRayDir = 1.0/r.d.x;
-	// double tNear = (xmin - r.o.x)*invRayDir;
-	// double tFar  = (xmax - r.o.x)*invRayDir;
-	// if(tNear > tFar) std::swap(tNear, tFar);
-	// t0 = tNear > t0 ? tNear : t0;
-	// t1 = tFar < t1 ? tFar : t1;
-	// if(t0 > t1) return false;
-	// //for y
-	// invRayDir = 1.0/r.d.y;
-	// tNear = (ymin - r.o.y)*invRayDir;
-	// tFar  = (ymax - r.o.y)*invRayDir;
-	// if(tNear > tFar) std::swap(tNear, tFar);
-	// t0 = tNear > t0 ? tNear : t0;
-	// t1 = tFar < t1 ? tFar : t1;
-	// if(t0 > t1) return false;
-	// //for z
-	// invRayDir = 1.0/r.d.z;
-	// tNear = (zmin - r.o.z)*invRayDir;
-	// tFar  = (zmax - r.o.z)*invRayDir;
-	// if(tNear > tFar) std::swap(tNear, tFar);
-	// t0 = tNear > t0 ? tNear : t0;
-	// t1 = tFar < t1 ? tFar : t1;
-	// if(t0 > t1) return false;
-
-	// double min_dist = std::numeric_limits<double>::infinity();
-	// for(int i=0; i<faces.size(); i++)
-	// {
-	// 	vec4 A = verts[faces[i].pnts[0]];
-	// 	vec4 B = verts[faces[i].pnts[1]];
-	// 	vec4 C = verts[faces[i].pnts[2]];
-
-	// 	vec4 edge1 = B - A;
-	// 	vec4 edge2 = C - A;
-	// 	vec4 pvec = r.d.cross(edge2);
-	// 	double det = edge1.dot(pvec);
-	// 	if(det == 0) continue;
-	// 	double invDet = 1/det;
-	// 	vec4 tvec = r.o - A;
-	// 	double u = tvec.dot(pvec) * invDet;
-	// 	if(u<0 || u>1) continue;
-	// 	vec4 qvec = tvec.cross(edge1);
-	// 	double v = r.d.dot(qvec) * invDet;
-	// 	if(v<0 || (u + v) >1) continue;
-	// 	double hit = (edge2.dot(qvec) * invDet);
-	// 	if(hit<0) continue;
-
-	// 	if(hit<r.t)
-	// 	{
-	// 		vec4 N = norms[faces[i].nrms[1]]*u + norms[faces[i].nrms[2]]*v + norms[faces[i].nrms[0]]*(1 - u - v);
-	// 		vec2 U = texts[faces[i].txts[1]]*u + texts[faces[i].txts[2]]*v + texts[faces[i].txts[0]]*(1 - u - v);
-	// 		// std::cout << texts[faces[i].txts[1]].u << ", " << texts[faces[i].txts[1]].v << std::endl;
-	// 		// std::cout << U.u << ", " << U.v << std::endl; 
-	// 		min_dist = hit;
-	// 		r.t = hit;
-	// 		r.hit_norm = N;
-	// 		r.hit_uv = U;
-	// 		r.hit_color = diffuse(U);
-	// 		closest_face = i;
-	// 	}
-	// }
-	// if(closest_face!=-1) return true;
-	// else return false;
 }
 
 prim_hit mesh::intersect_bvh(ray& r, bvh_node<face>* node, int level)
@@ -163,16 +75,9 @@ prim_hit mesh::intersect_bvh(ray& r, bvh_node<face>* node, int level)
 	t1 = tFar < t1 ? tFar : t1;
 	if(t0 > t1) return min_hit;
 
-	// if(r.debug&&level==2&&node->max[1]==0.15) std::cout << "PASSED THE BBOX INTERSECTION BITCHES" << std::endl;
-
 	if(node->left==NULL||node->right==NULL)
 	{
-		// if (r.debug) 
-		// {
-		// 	std::cout << "now intersecting actual primitives" << std::endl;
-		// 	std::cout << "        " << node->prims.size() << std::endl;
-		// 	// std::cout << "        " << 
-		// }
+
 		for(int i=0; i<node->prims.size(); i++)
 		{
 			vec4 A = verts[node->prims[i]->pnts[0]];
@@ -203,14 +108,6 @@ prim_hit mesh::intersect_bvh(ray& r, bvh_node<face>* node, int level)
 			}
 		}
 		return min_hit;
-		// if(min_hit.prim != NULL)
-		// {
-		// 	return min_hit;
-		// }
-		// else
-		// {
-		// 	return NULL;
-		//return closest hit
 	}
 	else
 	{
@@ -294,7 +191,6 @@ void mesh::readobj(std::string& filepath)
 	//set bbox for each polygon
 	for(int i=0; i<faces.size(); i++)
 	{
-		// std::cout << "setting bbox for face " << i << std::endl;
 		faces[i].xmin = faces[i].ymin = faces[i].zmin = std::numeric_limits<double>::infinity();
 		faces[i].xmax = faces[i].ymax = faces[i].zmax = -std::numeric_limits<double>::infinity();
 		double epsilon = 0.0001;
@@ -307,12 +203,6 @@ void mesh::readobj(std::string& filepath)
 			if(verts[faces[i].pnts[j]].y<faces[i].ymin) faces[i].ymin = verts[faces[i].pnts[j]].y;
 			if(verts[faces[i].pnts[j]].z<faces[i].zmin) faces[i].zmin = verts[faces[i].pnts[j]].z;
 		}
-		// faces[i].xmax += epsilon;
-		// faces[i].ymax += epsilon;
-		// faces[i].zmax += epsilon;
-		// faces[i].xmin -= epsilon;
-		// faces[i].ymin -= epsilon;
-		// faces[i].zmin -= epsilon;
 	}
 }
 

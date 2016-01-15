@@ -44,6 +44,7 @@ public:
 	static const short DIFF;
 	static const short REFL;
 	static const short REFR;
+	static const short USER;
 
 
 private:
@@ -62,12 +63,9 @@ private:
 	double lense_radius;
 
 	int max_depth;
+	int min_depth;
 	double ambience;
 	unsigned int *rand_seed;
-
-	vec4 rgb_total;
-	double rand_total;
-	vec4 rgb_denied;
 };
 
 #endif

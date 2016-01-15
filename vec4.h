@@ -26,7 +26,7 @@ public:
 	double dot(vec4& v);
 	vec4 cross(vec4& v);
 	vec4 reflect(vec4& normal);
-	vec4 refract(vec4& normal, double n1, double n2, double &cos2t);
+	vec4 refract(vec4& normal, double n1, double n2, double &cos2t, double &fresnel);
 	void normalize();
 	void clamp(double lower, double upper);
 
@@ -122,7 +122,7 @@ public:
 	double prior_ior;
 	int debug;
 	wavelength spectrum;
-	short stack[5];
+	short stack[12];
 };
 
 #endif

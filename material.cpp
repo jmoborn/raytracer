@@ -14,17 +14,6 @@ material::material(vec4 diff_c, vec4 refl_c, vec4 refr_c, vec4 emit_c, double di
 	this->has_diff_map = false;
 
 	this->energy = diffuse+reflect+refract+emit;
-	// if(energy!=1.0)
-	// {
-	// 	diffuse /= energy;
-	// 	reflect /= energy;
-	// 	refract /= energy;
-	// }
-	// if(this->emit>0.0)
-	// {
-	// 	this->diffuse_color = this->emit_color;
-	// 	this->diffuse = this->emit;
-	// }
 }
 
 material::~material(){}
@@ -33,7 +22,6 @@ vec4 material::get_diffuse_color(vec2 uv)
 {
 	if(has_diff_map)
 	{
-		// std::cout << uv.u << ", " << uv.v << std::endl;
 		vec4 map_color = get_map_color(uv);
 		return map_color*diffuse_color*diffuse + map_color*emit_color*emit;
 	}
@@ -64,14 +52,11 @@ vec4 material::get_map_color(vec2 uv)
 	return this->diff_map.getpixel(uv.u, uv.v);
 }
 
-double material::get_ior(double mult)
+double material::get_ior(double mult, int type)
 {
-	
-	// wavelength spectrum(1, color);
-	// double wavelength = spectrum.get_wavelength();
-
 	// double wavelength = .4 +.3*mult;
 
+	// coefficients for borosilicate crown glass (BK7)
 	// double B1 = 1.03961212;
 	// double B2 = 0.231792344;
 	// double B3 = 1.01046945;
@@ -80,22 +65,34 @@ double material::get_ior(double mult)
 	// double C3 = .0103560653;
 
 	// double lambda2 = wavelength*wavelength;
-
+	// sellmeier equation
 	// double n2 = 1 + (B1*lambda2)/(lambda2-C1) + (B2*lambda2)/(lambda2-C2) + (B3*lambda2)/(lambda2-C3);
-	// // std::cout << "ior: " << sqrt(n2) << std::endl;
 	// return sqrt(n2);
 
+	// bezier spline control
+	// float P0 =  0.f;
+	// float P1 = 0.01f;
+	// float P2 = 1.0f;
+	// float P3 = 1.0f;
+	// float t = mult;
+	// float comp_t = 1.f - mult;
+	// float val = P0*comp_t*comp_t + P1*2.f*comp_t*t + P2*t*t;
 
-	// double wavelength = 0.01*(2*color.x - color.z + color.y);
-	// if(wavelength>0) 
-	// std::cout << "get_ior: " << ior << " + " << wavelength << " = " << ior + wavelength << std::endl;
+	if(type==0)
+	{
+	float P0 =  0.f;
+	float P1 = 0.01f;
+	float P2 = 0.99f;
+	float P3 = 1.0f;
+	float t = mult;
+	float comp_t = 1.f - mult;
+	mult = P0*comp_t*comp_t*comp_t + P1*3.f*comp_t*comp_t*t + P2*3.f*comp_t*t*t + P3*t*t*t;
+	}
 
-	// double wavelength = 0.06*mult*(color.x - color.z);
-	// return ior + wavelength;
+	float range = 0.14;
+	if(type==0||type==3) range = 0.22;
 
-	// std::cout << "mult: " << mult << std::endl;
-	// return ior + (mult-0.5)*0.000009;
-	return ior + (mult-0.5)*0.06;
+	return ior + (mult-0.5)*range; // 0.11 // 0.06
 }
 
 double material::get_diffuse()
