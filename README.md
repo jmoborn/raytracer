@@ -3,4 +3,6 @@ raytracer
 
 A monte carlo path tracer written in C++
 
-![example render](http://i.imgur.com/2v4JSX2.jpg "Example Render")
+![test](../renders/balls.png?raw=true)
+![dragon](../renders/dragon.png?raw=true)
+![clock](../renders/clock.png?raw=true)

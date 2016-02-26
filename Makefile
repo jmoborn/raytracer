@@ -1,4 +1,4 @@
 
 build:
-	g++ *.cpp -O3 -fopenmp -o raytracer
+	g++ src/*.cpp -O3 -fopenmp -o raytracer
 
