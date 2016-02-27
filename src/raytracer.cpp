@@ -8,11 +8,11 @@ const short raytracer::USER = 3;
 
 raytracer::raytracer(std::string scenefile)
 {
-	max_depth = 10;
-	min_depth = 6;
-	ambience = 0.33;
-	focal_length = 7.3;
-	lense_radius = 0.0;//0.12; // 0.033
+	max_depth = 5;
+	min_depth = 5;
+	ambience = 0.5;
+	focal_length = 3.431;
+	lense_radius = 0.033;
 	
 	load_scene(scenefile);
 }
@@ -169,9 +169,10 @@ int raytracer::intersect_shadow(ray& v)
 {
 	int hit = 0;
 	double light_dist = v.t - ray_tolerance;
+	ray vs(v.o, v.d);
 	for(int o=0; o<objs.size(); o++)
 	{
-		bool hit_o = objs[o]->intersect(v);
+		bool hit_o = objs[o]->intersect(vs);
 		if(hit_o&&v.t<light_dist)
 		{
 			hit = 1;
@@ -187,44 +188,48 @@ vec4 raytracer::shade(ray& v)
 	for(int l=0; l<lights.size(); l++)
 	{
 		vec4 pt = v.end();
-		vec4 sw = lights[l]->c - pt;
-		vec4 up_y(0,1,0);
-		vec4 up_x(1,0,0);
-		vec4 su = (fabs(sw.x)>0.1?up_y:up_x).cross(sw);
-		su.normalize();
-		vec4 sv = sw.cross(su);
 		vec4 l_dist = pt - lights[l]->c;
 		double cos_a_max = sqrt(1-lights[l]->r*lights[l]->r/(l_dist).dot(l_dist));
-		double eps1 = randd();
-		double eps2 = randd();
-		double cos_a = 1-eps1+eps1*cos_a_max;
-		double sin_a = sqrt(1-cos_a*cos_a);
-		double phi = 2*M_PI*eps2;
-		vec4 l_dir = su*cos(phi)*sin_a + sv*sin(phi)*sin_a + sw*cos_a;
+
+		vec4 l_dir = lights[l]->c - pt;
+		vec4 up_y(0,1,0);
+		vec4 up_x(1,0,0);
+		vec4 up = fabs(l_dir.x)>0.1?up_y:up_x;
+		vec4 axis_x = l_dir.cross(up);
+		axis_x.normalize();
+		vec4 axis_y = axis_x.cross(l_dir);
+		axis_y.normalize();
+		double hyp = 1.0/cos_a_max;
+		double dist_radius = sqrt(hyp*hyp-1);
+		double rr = sqrt(randd());
+		double rtheta = 2*M_PI*randd();
+
+		double cur_x = rr*cos(rtheta);
+		double cur_y = rr*sin(rtheta);
+		l_dir += (axis_x*cur_x);
+		l_dir += (axis_y*cur_y);
 		l_dir.normalize();
 
 		vec4 l_org(pt);
-		l_org += (v.hit_norm*ray_tolerance);
-		ray vs(l_org, l_dir);
+		l_org += (l_dir*ray_tolerance);
+		ray vl(l_org, l_dir);
+		this->lights[l]->intersect(vl);
+		double light_dist = vl.t - ray_tolerance;
 
-		this->lights[l]->intersect(vs);
-		int hit = intersect_shadow(vs);
+		ray vs(l_org, l_dir);
+		int hit = intersect_scene(vs);
+		if(vs.t>light_dist) hit = -1;
 
 		double shadow_mult = 0.0;
-		if(!hit)
+		if(hit<0)
 		{
 			double omega = 2*M_PI*(1-cos_a_max);
 			shadow_mult = omega;
 		}
-		
-		vec4 light(sw);
-		light.normalize();
-		double n_dot_l = v.hit_norm.dot(light);
-		vec4 eye = v.d*(-1);
-		vec4 light_color = mtls[lights[l]->get_mtl_idx()]->get_diffuse_color();
-		color += v.hit_color * light_color * std::max(0.0, n_dot_l);
-		color *= shadow_mult;
 
+		double n_dot_l = v.hit_norm.dot(l_dir);
+		vec4 light_color = mtls[lights[l]->get_mtl_idx()]->get_diffuse_color();
+		color += v.hit_color * light_color * std::max(0.0, n_dot_l) * shadow_mult; // * M_1_PI;
 	}
 	return color;
 }
@@ -236,17 +241,7 @@ vec4 raytracer::trace_path(ray& v, int depth)
 	if(depth>min_depth) 
 	{
 		if(v.debug) std::cout << "MAX BOUNCES " << depth << std::endl;
-		// if(v.prior_ior!=0) color += ambience;
-		// if(v.prior_ior!=0 && depth < max_depth+4)
-		// {
-		// if(v.stack[0] == REFR) return vec4(0.05,0.05,0.05);
-		// }
-		// else
-		// {
-		if(v.stack[0] != REFR || depth > max_depth) return color;
-
-		// if(randd_negative()<0||depth>max_depth) return color; // TODO: russian roulette
-		// }
+		return color;
 	}
 
 	int closest_obj = intersect_scene(v);
@@ -256,13 +251,6 @@ vec4 raytracer::trace_path(ray& v, int depth)
 		v.hit_color = mtls[v.hit_mtl]->get_diffuse_color(v.hit_uv);
 		if(mtls[v.hit_mtl]->get_emit())
 		{
-			// if(v.stack[0]==DIFF && v.stack[1]==REFR) v.hit_color *= 1.3;
-			if(v.stack[0]==USER && v.stack[1]==REFR) v.hit_color *= 2.5;
-			// if(v.stack[0]>99 && v.stack[1]==REFR)
-			// {	
-				
-			// 	v.hit_color *= (2.5 + 2.0*((v.stack[0]-100.0)/100.0));
-			// }
 			if(v.debug) std::cout << "EMIT " << depth << std::endl;			
 			return v.hit_color;
 		}
@@ -301,7 +289,7 @@ vec4 raytracer::trace_path(ray& v, int depth)
 				double fresnel;
 				vec4 dir = inc_neg.refract(v.hit_norm, n1, n2, cos2t, fresnel);
 	
-				if(cos2t<0)// || randd()<fresnel) 
+				if(cos2t<0 || randd()<fresnel) 
 				{
 					n2 = v.prior_ior;
 					dir = inc.reflect(v.hit_norm);
@@ -325,11 +313,13 @@ vec4 raytracer::trace_path(ray& v, int depth)
 			org += (v.hit_norm*ray_tolerance);
 			vec4 up(0.0,1.0,0.0);
 			vec4 axis_x = dir.cross(up);
+			axis_x.normalize();
 			vec4 axis_y = axis_x.cross(dir);
+			axis_y.normalize();
 			double dist_radius = 0.0;//0.09; // TODO: per material glossy reflection control
 			
 			double cur_theta = randd()*2.0*M_PI;
-			double cur_radius = randd()*dist_radius;
+			double cur_radius = sqrt(randd())*dist_radius;
 			double cur_x = cur_radius*cos(cur_theta);
 			double cur_y = cur_radius*sin(cur_theta);
 			dir += (axis_x*cur_x);
@@ -360,33 +350,6 @@ vec4 raytracer::trace_path(ray& v, int depth)
 			r.o = org;
 			r.d = dir;
 			r.stack[depth] = DIFF;
-			if(closest_obj==1) 
-			{
-				// float du = v.hit_uv.u - 0.4209f;
-				// float dv = v.hit_uv.v - 0.1539f;
-				// float rad = 0.0586f;
-				// float dist = sqrt(du*du+dv*dv);
-				// if(dist<rad)
-				// {
-				// 	float half_rad = rad/2.f;
-				// 	float half_dist = dist - half_rad;
-				// 	if(half_dist<0)
-				// 	{
-				// 		r.stack[depth] = 200;
-				// 	}
-				// 	else
-				// 	{
-				// 		float mult = 1.f - half_dist/half_rad;
-				// 		r.stack[depth] = (short)(mult*100+100);
-				// 	}
-				// }
-				// else
-				// {
-				// 	r.stack[depth] = DIFF;
-				// }
-				r.stack[depth] = USER;
-
-			}
 			color += v.hit_color*trace_path(r, depth+1);
 		}
 	}
@@ -499,42 +462,20 @@ void raytracer::render_image(std::string& outfile)
 					dir.normalize();
 
 					ray v(org, dir);
-// if(i==696&&j==346)
-// {
-// 	v.debug=1;
-// }
 					color += trace_path(v, 0);
 				}
 			}
 			color *= 1/samples;
 			color.clamp(0.0, 1.0);
 
-
-			// double mult = (double)i/(double)image_width;
-			// wavelength wl;
-			// float P0 =  0.f;
-			// float P1 = 0.48f;
-			// float P2 = 0.52f;
-			// float P3 = 1.0f;
-			// float t = mult;
-			// float comp_t = 1.f - mult;
-			// float val = P0*comp_t*comp_t*comp_t + P1*3.f*comp_t*comp_t*t + P2*3.f*comp_t*t*t + P3*t*t*t;
-			// vec4 color = wl.get_color_from_mult(val);
-
-			// rgb_total += color;
-			// if(x<.34&&x>.32) std::cout << color.x << " " << color.y << " " << color.z << std::endl;
-			// if(i==835&&j==346) std::cout << color.x << " " << color.y << " " << color.z << std::endl;
-			// else color = vec4(0,0,0);
-
 			pic.setpixel(i, j, color);
-			// double decimal = ((double)((i+1)*(j+1)))/((double)(total_pixels));
-			// // double decimal = ((double)((image_width - i)*(j+1)))/((double)(total_pixels));
 
-			if(i%(image_width/4)==0 && j==0)
-			{
-				std::cout << (double)i/(double)image_width << std::endl;
-				pic.writeppm(outfile);
-			}
+			// output progress
+			// if(i%(image_width/4)==0 && j==0)
+			// {
+			// 	std::cout << (double)i/(double)image_width << std::endl;
+			// 	pic.writeppm(outfile);
+			// }
 			
 		}
 	}
@@ -574,7 +515,6 @@ int main(int argc, char *argv[])
 	raytracer r(scenefile);
 	r.print_scene_info(std::cout);
 
-	// start timer
 	double start = when();
 
 	r.render_image(outfile);

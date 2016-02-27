@@ -78,21 +78,9 @@ double material::get_ior(double mult, int type)
 	// float comp_t = 1.f - mult;
 	// float val = P0*comp_t*comp_t + P1*2.f*comp_t*t + P2*t*t;
 
-	if(type==0)
-	{
-	float P0 =  0.f;
-	float P1 = 0.01f;
-	float P2 = 0.99f;
-	float P3 = 1.0f;
-	float t = mult;
-	float comp_t = 1.f - mult;
-	mult = P0*comp_t*comp_t*comp_t + P1*3.f*comp_t*comp_t*t + P2*3.f*comp_t*t*t + P3*t*t*t;
-	}
+	float range = 0.06;
 
-	float range = 0.14;
-	if(type==0||type==3) range = 0.22;
-
-	return ior + (mult-0.5)*range; // 0.11 // 0.06
+	return ior + (mult-0.5)*range;
 }
 
 double material::get_diffuse()
